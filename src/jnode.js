@@ -3,9 +3,9 @@
  *
  * supported browsers:
  * - Firefox 3.6+ / Seamonkey 2 / Fennec       | [X] tested (Firefox 3.6 / Seamonkey 2.0 without transitions, Fennec needs testing)
- * - Chrome / Safari 3.2+ / MobileWebkit       | [ ] tested
+ * - Chrome / Safari 3.2+ / MobileWebkit       | [X] tested
  * - Opera 10.5+                               | [ ] tested
- * - MSIE 8+                                   | [X] tested (MSIE 8 without transitions)
+ * - MSIE 8+                                   | [ ] tested (MSIE 8 without transitions)
  *
  * @version   0.0.1a1
  * @copyright 2011 <murdoc@raidrush.org>
@@ -68,9 +68,6 @@ var JNode = (function() {
   // private
   var STORAGE_ID_COUNTER = 10;
   
-  // private
-  var JSONP_CALLBACK_COUNTER = 0;
-  
   // ----------------------------------------------
   
   // private
@@ -129,9 +126,9 @@ var JNode = (function() {
       if (typeof needle == "string")
         return this.node.getAttribute(needle);
         
-      JNOde.each(needle, function(v, k) {
+      JNode.each(needle, function(v, k) {
         this.node.setAttribute(k, v);
-      });
+      }, this);
       
       return this;
     },
@@ -146,7 +143,12 @@ var JNode = (function() {
     style: function style(needle, value) 
     {
       if (arguments.length === 2) {
-        this.node.style.cssText += ";" + needle + ":" + value;
+        if (value === "") {
+          this.node.style.removeProperty(needle);
+          return this;
+        }
+        
+        this.node.style.setProperty(needle, value, "");
         return this;
       }
       
@@ -155,15 +157,20 @@ var JNode = (function() {
           this.node.style.cssText += ';' + needle;
           return this;
         }
-      
+        
+        // check style first
+        var value;
+        
+        if (!!(value = this.node.style.getPropertyValue(needle)))
+          return value;
+        
         return document.defaultView
           .getComputedStyle(this.node, null)
           .getPropertyValue(needle);
       }
       
       var expr = "";
-      for (var k in needle)
-        expr += ";" + k + ":" + needle[k];
+      JNode.each(needle, function(v, k) { expr += ";" + k + ":" + v; });
         
       this.node.style.cssText += expr;
       return this;
@@ -202,7 +209,7 @@ var JNode = (function() {
     data: function data(needle, value) 
     {
       if (arguments.length === 2) {
-        this.node.dataset[needle] = false;
+        this.node.dataset[needle] = value;
         return this;
       }
       
@@ -271,7 +278,9 @@ var JNode = (function() {
         wrapper = new JNode(wrapper);
       
       // use real DOM-methods instead of JNode wrapper methods
-      this.node.parentNode.replaceChild(wrapper.node, this.node);
+      if (this.node.parentNode) 
+        this.node.parentNode.replaceChild(wrapper.node, this.node);
+        
       wrapper.node.appendChild(this.node);
       
       return wrapper;
@@ -317,8 +326,7 @@ var JNode = (function() {
      */
     first: function first(selector) 
     {
-      selector = selector || "> *";        
-      return JNode.find(selector, this.node, true);
+      return JNode.find(selector || '*', this.node, true);
     },
     
     /**
@@ -329,12 +337,7 @@ var JNode = (function() {
      */
     match: function match(selector)
     {
-      // TODO: use INSERTIONS
-      
-      var wrapper = EL_DIV.cloneNode(true);
-      wrapper.appendChild(this.node.cloneNode(true));
-      
-      return (JNode.find(selector, wrapper, true) !== null);
+      return JNode.match(selector, this.node);
     },
     
     /**
@@ -362,7 +365,7 @@ var JNode = (function() {
       if (typeof selector == "number") {
         var p = this.node.parentNode || null;
         
-        while (--selector && $.isElement(p))
+        while (--selector && p)
           p = p.parentNode || null
           
         return new JNode(p);
@@ -399,7 +402,7 @@ var JNode = (function() {
      * @param   String    selector
      * @return  mixed
      */
-    next: function next(selector) {        
+    next: function next(selector) {      
       var nodes  = this.parent().childs(true),
           length = nodes.length;
       
@@ -410,6 +413,12 @@ var JNode = (function() {
           break;
         }
       }
+      
+      if (arguments.length === 0 || !selector)
+        return nodes[i];
+        
+      if (typeof selector === "number")
+        return nodes[i + selector];
       
       for (; i < length; ++i)
         if (nodes[i].match(selector))
@@ -502,11 +511,11 @@ var JNode = (function() {
         content = content.node;
       
       if (content instanceof Element) {
-        this.innerHTML = '';
+        this.node.innerHTML = '';
         return this.insert(content);
       }
       
-      this.innerHTML = content;
+      this.node.innerHTML = content;
       return this;
     },
     
@@ -550,12 +559,15 @@ var JNode = (function() {
         if (this.node === document)
           uid = 1;
         else {
-          var uid = this.node === document ? 0 
-            : this.node.uniqueID || ++STORAGE_ID_COUNTER;
+          if (this.node.uniqueID)
+            uid = this.node.uniqueID;
+          else
+            uid = ++STORAGE_ID_COUNTER;
             
           this.node._jnode_uid = uid;
         }
-      }
+      } else 
+        uid = this.node._jnode_uid;
       
       if (!JNode.Storage[uid])
         JNode.Storage[uid] = {};
@@ -572,7 +584,9 @@ var JNode = (function() {
      */
     store: function store(needle, value)
     {
-      this.getStorage()[needle] = value;
+      var storage = this.getStorage();
+      storage[needle] = value;
+      
       return this;
     },
     
@@ -602,8 +616,8 @@ var JNode = (function() {
     {
       JNode.release(this.node);
       
-      var storage = this.getStorage();
-      storage = null;
+      if (this.node._jnode_uid)
+        delete JNode.Storage[this.node._jnode_uid];
       
       if (this.node !== document) {
         var childs = this.childs();
@@ -637,6 +651,19 @@ var JNode = (function() {
       
       this.node.insertAdjacentHTML(pos, content);
       return this;
+    };
+  }
+  
+  if (typeof EL_DIV.dataset === "undefined") {
+    // MSIE 9 does not support .dataset, but data-xyz attributes
+    JNode.prototype.data = function data(needle, value) 
+    {
+      if (arguments.length === 2) {
+        this.attr("data-" + needle, value);
+        return this;
+      }
+      
+      return this.attr("data-" + needle);
     };
   }
   
@@ -775,9 +802,7 @@ var JNode = (function() {
   JNode.purge = function purge()
   {
     JNode.release(window);
-    
-    var storage = JNode.getStorage();
-    storage = {};
+    delete JNode.Storage[0];
   };
   
   // ----------------------------------------------
@@ -1025,7 +1050,7 @@ var JNode = (function() {
       // unregister eventhandler
       var responder = unregister(element, eventName, handler, useCapture);
       
-      if (!responder.responder)
+      if (!responder || !responder.responder)
         return;
         
       responder = responder.responder;
@@ -1084,7 +1109,10 @@ var JNode = (function() {
      */
     JNode.prototype.release = function release(eventName, handler, useCapture)
     {
-      JNode.release(this.node, eventName, handler, useCapture);
+      var args = SLICE.call(arguments);
+      args.unshift(this.node);
+      
+      JNode.release.apply(null, args);
       return this;
     };
     
@@ -1317,8 +1345,9 @@ var JNode = (function() {
     if (arguments.length === 1) {
       if (indicator instanceof Element || indicator === document)
         return new JNode(indicator);
-        
-      return new JNode(document.getElementById(indicator));
+      
+      var e = document.getElementById(indicator);
+      return e ? new JNode(e) : null;
     }
       
     var nodes = [];
