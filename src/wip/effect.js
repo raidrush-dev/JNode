@@ -1,6 +1,8 @@
-// EXPERIMENTAL
-
-(function() {
+(function(JNODE) {
+  // private
+  var div = document.createElement("div");
+  
+  // private
   var VENDOR = (function() {
     var props = [
       // vendor            // testing-property                  // event
@@ -12,16 +14,19 @@
     ];
     
     for (var i = 0, l = props.length; i < l; ++i) {
-      EL_DIV.style.cssText = props[i].prop + ": height;";
-      if (EL_DIV.style.cssText.indexOf(props[i].prop) > -1)
+      div.style.cssText = props[i].prop + ": height;";
+      if (div.style.cssText.indexOf(props[i].prop) > -1)
         return { prefix: props[i].vendor, event: props[i].event };
         
-      EL_DIV.style.cssText = '';
+      div.style.cssText = '';
     }
     
     return false;
   })();
   
+  div = null;
+  
+  // private
   function v(prop) { return VENDOR.prefix ? VENDOR.prefix + "-" + prop : prop; }
   
   /**
@@ -114,5 +119,4 @@
   {
     return this.morph('opacity:1', duration, callback);
   };
-})();
-
+})(JNode);
