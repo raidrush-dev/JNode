@@ -79,8 +79,8 @@ var JNode = (function() {
       name = '*';
 
     CONTAINERS[name].innerHTML = html;
-    var element = CONTAINERS[name].childNodes[0];
-
+    var element = CONTAINERS[name].childNodes[0].cloneNode(true);
+    
     // reset
     CONTAINERS[name].innerHTML = '';
     return element;
@@ -1290,15 +1290,13 @@ var JNode = (function() {
                || html.webkitMatchesSelector || html.msMatchesSelector;
     
     if (!matches)
-      // MSIE 8 fallback
-      return JNode.match = function match(expr, node) { 
-        return Array.prototype.indexOf.call(node.parentNode.querySelectorAll(expr), node) != -1; };
+      throw "upgrade your browser man!";
     
     // Check to see if it's possible to do matchesSelector
     // on a disconnected node (IE 9 fails this)
     var disconnectedMatch = !matches.call(document.createElement("div"), "div"),
         pseudoWorks       = false;
-
+    
     try {
       // This should fail with an exception
       // Gecko does not error, returns false instead
@@ -1326,6 +1324,19 @@ var JNode = (function() {
           }
         }
       } catch(e) {}
+      
+      // MSIE 9
+      if (disconnectedMatch && !node.parentNode) {
+        // VERY SLOW, but MSIE users deserve it
+        var parentNode = new JNode("div");
+        parentNode.style("display:none;position:absolute;top:-100px;left:-100px").append(document.body); // reflow + repaint
+        parentNode.insert(node.cloneNode(true)); // reflow + repaint
+        
+        var res = JNode.match(expr, node);
+        parentNode.remove(); // reflow + repaint
+        
+        return res;
+      }
       
       return false;
     };
