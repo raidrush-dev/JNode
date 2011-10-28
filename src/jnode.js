@@ -4,8 +4,8 @@
  * supported browsers:
  * - Firefox 3.6+ / Seamonkey 2 / Fennec       | [X] tested (Firefox 3.6 / Seamonkey 2.0 without transitions, Fennec needs testing)
  * - Chrome / Safari 3.2+ / MobileWebkit       | [X] tested
- * - Opera 10.5+                               | [ ] tested
- * - MSIE 9+                                   | [ ] tested (MSIE 9 without transitions)
+ * - Opera 10.5+                               | [X] tested (without FileAPI, transitions may have bugs [Opera related])
+ * - MSIE 9+                                   | [X] tested (without FileAPI and transitions [maybe available in MSIE 10?])
  *
  * @version   0.0.1a1
  * @copyright 2011 <murdoc@raidrush.org>
@@ -1204,6 +1204,373 @@ var JNode = (function() {
   })(); 
   
   // ----------------------------------------------
+  // ajax/jsonp
+  
+  // private
+  var JSONP_CALLBACK_COUNTER = 0;
+  
+  // class-body
+  JNode.Request = function JRequest(url, options)
+  {
+    // set constructor
+    this.constructor = JRequest;
+    
+    this.url = url;
+    this.options = { 
+      method:       "post",
+      data:         {},       // can be a File, FormData, Object or String
+      async:        true,     // true/false
+      jsonp:        '',       // if this is a function, JSONP will be used
+      contentType:  'application/x-www-form-urlencoded',
+      encoding:     'UTF-8',
+      parseHtml:    false,    // if true, the responseText will be parsed as HTML
+      
+      // event-handler
+      onSuccess:    JNode.noop,
+      onFailure:    JNode.noop,
+      onProgress:   JNode.noop,
+      onUpload:     JNode.noop
+    };
+    
+    JNode.each(options, function(v, k) { this.options[k] = v; }, this);
+    
+    this.method = this.options.method;
+    this.request();
+  };
+  
+  // prototype
+  JNode.Request.prototype = {    
+    /**
+     * initializes the request
+     *
+     * @void
+     */
+    request: function request()
+    {
+      // JSONP
+      if (this.options.jsonp) {
+        var jsonp = '_jnode_jsonp_ref_' + JSONP_CALLBACK_COUNTER++;
+        window[jsonp] = this.options.jsonp;
+        
+        var url = this.url;
+        url += (url.indexOf('?') == -1 ? '?' : '&') + 'jsonp=' + jsonp;
+        
+        var script = new JNode('script');
+        script.attr({ type: 'text/javascript', src: url });
+        
+        script.listen("load", function() { 
+          JNode.defer(function() {
+            script.remove();
+            delete window[jsonp];
+          });
+        });
+        
+        script.append(document.body);        
+        return;
+      }
+      
+      // AJAX
+      this.transport = new XMLHttpRequest;
+      this.transport.open(this.method, this.url, this.options.async);
+      
+      // set request headers
+      this.setRequestHeaders();
+      
+      var data = this.data;
+      
+      // prepare body
+      if (this.method === 'post') {  
+        if ((window.FormData && data instanceof FormData)
+         || (window.File && data instanceof File)) {
+          // add progress and upload listeners
+          this.transport.upload.addEventListener('progress', this.options.onProgress);
+          this.transport.upload.addEventListener('load', this.options.onUpload);
+        } else {
+          data = [];
+          
+          // generate key=value pairs
+          JNode.each(this.options.data, function(v, k) { data.push(k + "=" + v); });
+          data = data.join('&');
+        }
+      }
+      
+      // add load/error/abort listener
+      this.transport.addEventListener('load', this.loaded.bind(this));
+      this.transport.addEventListener('error', this.options.onFailure);
+      this.transport.addEventListener('abort', this.options.onFailure);
+      
+      // send
+      this.transport.send(data);
+    },
+    
+    /**
+     * handles the response
+     *
+     * @void
+     */
+    loaded: function loaded()
+    {
+      var res  = { text: '', json: null, xml: null }, 
+          type = this.transport.getResponseHeader('Content-type');
+      
+      res.text = this.transport.responseText;
+      
+      // parse response
+      switch (type.toLowerCase().replace(/;\s*charset=.*$/i, '')) {
+        case 'application/json':
+        case 'text/json':
+          res.json = JSON.parse(res.text);
+          break;
+        
+        case 'application/ecmascript':
+        case 'application/javascript':
+        case 'text/javascript':
+          try { eval(res.text); } catch (e) {}
+          break;
+          
+        case 'text/html':
+          if (this.parseHTML === true)
+            res.html = new JNode(res.text);
+      }
+      
+      if (this.transport.responseXML)
+        res.xml = this.transport.responseXML;
+      
+      if (this.transport.status >= 200 
+       && this.transport.status < 300) {
+        this.options.onSuccess(res);
+        return;
+      }
+      
+      this.options.onFailure(res);
+    },
+
+    /**
+     * sets all required request-headers
+     *
+     * @void
+     */
+    setRequestHeaders: function setRequestHeaders()
+    {
+      this.transport.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+      this.transport.setRequestHeader('Accept', 'text/javascript, text/html, application/xml, text/xml, *' + '/' + '*'); // notepad++ bug
+      
+      if (this.method === 'post')
+        this.transport.setRequestHeader('Content-type', this.options.contentType
+          + (this.options.encoding ? '; Charset=' + this.options.encoding : ''));
+    }
+  };
+  
+  /**
+   * loads data via ajax and insert them into the node
+   *
+   * @param   String    url
+   * @param   Object    options
+   * @return  JNode
+   */
+  JNode.prototype.load = function load(url, options)
+  {
+    options.onSuccess = function(res) {
+      this.update(res.text);
+    }.bind(this);
+    
+    new JNode.Request(url, options);
+    return this;
+  }
+  
+  // ----------------------------------------------
+  // effects
+  
+  // private
+  var CSS_TRANSFORM = /^((translate|rotate|scale)(X|Y|Z|3d)?|matrix(3d)?|perspective|skew(X|Y)?)$/i;
+  
+  // private
+  var CSS_TRANSITION = (function() {
+    var vendors = { o: "o", webkit: "webkit", moz: "", ms: "MS", "": "" },
+        vendor  = false,
+        prefix  = {};
+    
+    for (var i in vendors) {
+      var p = i ? "-" + i + "-" : "";
+      EL_DIV.style.cssText = p + "transition-property:all";
+      if (EL_DIV.style.getPropertyValue(p + "transition-property") == "all") {
+        vendor = p;
+        prefix = vendors[i];
+        break;
+      }
+    }
+    
+    EL_DIV.style.cssText = '';
+    
+    if (vendor === false)
+      return false;
+    
+    function mkevent(name) { return prefix ? prefix + name : name.toLowerCase(); }
+      
+    return {  
+      "vendor": vendor,
+      "tevent": mkevent("TransitionEnd"),
+      "aevent": mkevent("AnimationEnd")
+    };
+  })();
+  
+  /**
+   * animates css-styles using css3-transitions/animation (if available)
+   *
+   * @param   String          styles
+   * @param   Number|String   duration
+   * @param   Function        callback
+   * @return  JNode
+   */
+  JNode.prototype.morph = function morph(styles, duration, delay, ease, callback)
+  {
+    // the last argument can always be the callback
+    switch (arguments.length) {
+      case 1:
+        duration = .5;
+        delay = 0;
+        ease = "ease";
+        callback = JNode.noop;
+        break;
+        
+      case 2:
+        if (typeof duration === "function") {
+          callback = duration;
+          duration = .5;
+        }
+        
+        delay = 0;
+        ease = "ease";
+        break;
+        
+      case 3:
+        if (typeof delay === "function") {
+          callback = delay;
+          delay = 0;
+        }
+        
+        ease = "ease";
+        break;
+        
+      case 4:
+        if (typeof ease === "function") {
+          callback = ease;
+          ease = "ease";
+        }
+        
+        break;
+    }
+    
+    callback = callback || JNode.noop;
+    duration = duration || .5;
+    
+    switch (duration) {
+      case 'fast':
+        duration = .1;
+        break;
+        
+      case 'slow':
+        duration = 5;
+    }
+    
+    var tstyle = "", sstyle = "", endEvent, dnode = new JNode(document);
+    
+    if (styles.indexOf(":") === -1) {
+      if (!CSS_TRANSITION)
+        return this;
+        
+      // keyframe animation
+      endEvent = CSS_TRANSITION.aevent;
+      tstyle = sstyle = CSS_TRANSITION.vendor + "animation:" + styles + " " 
+        + duration + "s " + ease + " " + delay + "s";
+    } else {
+      // css transition
+      if (!CSS_TRANSITION) {
+        this.prop('style').cssText += ";" + styles;
+        callback(this);
+        return this;
+      }
+      
+      var setter = {}, transf = ""; 
+      
+      // generate style
+      sstyle = styles;
+      tstyle = sstyle + ";" + CSS_TRANSITION.vendor 
+        + "transition:all " + duration + "s " + ease + " " + delay + "s";
+        
+      endEvent = CSS_TRANSITION.tevent;
+      
+      for (var i = 0, s = styles.split(';'), l = s.length; i < l; ++i) {
+        var split = s[i].split(':'), prop = split[0];
+        
+        if (!prop) continue;
+        
+        if (CSS_TRANSFORM.test(prop)) {
+          transf += " " + prop + "(" + split[1] + ")";
+          continue;
+        }
+        
+        // check if the given style-property has a value.
+        // if not: use computed-style and set it as inline-style
+        var value = this.node.style.getPropertyValue(prop);
+        
+        if (value === "" || value === "auto")
+          setter[prop] = this.style(prop);
+      }
+      
+      if (setter) this.style(setter);
+      if (transf) tstyle += ";" + CSS_TRANSITION.vendor + "transform:" + transf;
+    }
+    
+    var handler = function() {
+      dnode.release(endEvent, handler, true);
+      
+      JNode.defer(function() {
+        // remove animations
+        this.style(sstyle);
+      
+        JNode.defer(callback, this);
+      }.bind(this));
+      
+    }.bind(this);
+    
+    dnode.listen(endEvent, handler, true);
+    JNode.defer(function() { this.style(tstyle); }.bind(this));
+    console.log(tstyle);
+    return this;
+  };
+  
+  /**
+   * fade-effect
+   *
+   * @param   Number|String   duration
+   * @param   Function        callback
+   * @return  JNode
+   */
+  JNode.prototype.fade = function fade(duration, callback) 
+  {
+    var args = SLICE.call(arguments, 0);
+    args.unshift("opacity:0");
+    
+    return this.morph.apply(this, args);
+  };
+  
+  /**
+   * appear-effect
+   *
+   * @param   NUmber|String   duration
+   * @param   Function        callback
+   * @return  JNode
+   */
+  JNode.prototype.appear = function appear(duration, callback) 
+  {
+    var args = SLICE.call(arguments, 0);
+    args.unshift("opacity:1");
+    
+    return this.morph.apply(this, args);
+  };
+  
+  // ----------------------------------------------
   // static
   
   // private
@@ -1287,10 +1654,33 @@ var JNode = (function() {
   (function() {
     var html    = document.documentElement,
         matches = html.matchesSelector || html.mozMatchesSelector 
-               || html.webkitMatchesSelector || html.msMatchesSelector;
+               || html.webkitMatchesSelector || html.msMatchesSelector
+               || html.oMatchesSelector;
     
-    if (!matches)
-      throw "upgrade your browser man!";
+    if (!matches) {
+      // MobileWebkit
+      JNode.match = function match(expr, node) 
+      { 
+        var reset = false;
+        
+        if (!node.parentNode) {
+          reset = node.style.display;
+          node.style.display = 'none';
+          document.body.appendChild(node); // reflow + repaint
+        }
+        
+        var matches = SLICE.call(node.parentNode.querySelectorAll(expr), 0).indexOf(node) !== -1;
+        
+        if (reset !== false) {
+          document.body.removeChild(node); // reflow + repaint
+          node.style.display = reset;
+        }
+        
+        return matches;
+      };
+      
+      return;
+    }
     
     // Check to see if it's possible to do matchesSelector
     // on a disconnected node (IE 9 fails this)
@@ -1327,7 +1717,7 @@ var JNode = (function() {
       
       // MSIE 9
       if (disconnectedMatch && !node.parentNode) {
-        // VERY SLOW, but MSIE users deserve it
+        // VERY SLOW, but this is the only way to emulate the expected behaivor
         var parentNode = new JNode("div");
         parentNode.style("display:none;position:absolute;top:-100px;left:-100px").append(document.body); // reflow + repaint
         parentNode.insert(node.cloneNode(true)); // reflow + repaint
@@ -1451,4 +1841,126 @@ var JNode = (function() {
   // expose
   
   return JNode;
+})();
+
+// polyfill for MobileWebkit
+(function() {
+  if (typeof Array.isArray == "function")
+    return; // nothing to do here (javascript 1.8.5)
+    
+  // private
+  function polyfill(object, methods) 
+  {
+    for (var i in methods)
+      if ((i in methods) && typeof object[i] === "undefined")
+        object[i] = methods[i];
+  }
+  
+  // taken from: https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects
+  
+  polyfill(Object, {
+    keys: function keys(o) 
+    {
+      if (o !== Object(o))  
+        throw new TypeError('Object.keys called on non-object');  
+      var ret=[],p;  
+      for(p in o) if(Object.prototype.hasOwnProperty.call(o,p)) ret.push(p);  
+      return ret;  
+    }
+  });
+  
+  polyfill(Array, {
+    isArray: function isArray(object) 
+    {
+      return object instanceof Array;
+    }
+  });
+  
+  polyfill(Array.prototype, {
+    forEach: function forEach(func, context) 
+    {
+      for (var i = 0, l = this.length >>> 0; i < l; ++i)
+        func.call(context || null, this[i], i, this);
+    },
+    
+    indexOf: function indexOf(val) 
+    {
+      for (var i = 0, l = this.length >>> 0; i < l; ++i)
+        if (val === this[i])
+          return i;
+          
+      return -1;
+    },
+    
+    reduce: function reduce()
+    {
+      if(this === void 0 || this === null) throw new TypeError();
+      var t = Object(this), len = t.length >>> 0, k = 0, accumulator;
+      if(typeof fun != 'function') throw new TypeError();
+      if(len == 0 && arguments.length == 1) throw new TypeError();
+
+      if(arguments.length >= 2)
+       accumulator = arguments[1];
+      else
+        do{
+          if(k in t){
+            accumulator = t[k++];
+            break;
+          }
+          if(++k >= len) throw new TypeError();
+        } while (true);
+
+      while (k < len){
+        if(k in t) accumulator = fun.call(undefined, accumulator, t[k], k, t);
+        k++;
+      }
+      return accumulator;
+    },
+    
+    every: function every(fun)
+    {
+      if (this === void 0 || this === null)  
+        throw new TypeError();  
+    
+      var t = Object(this);  
+      var len = t.length >>> 0;  
+      if (typeof fun !== "function")  
+        throw new TypeError();  
+    
+      var thisp = arguments[1];  
+      for (var i = 0; i < len; i++)  
+      {  
+        if (i in t && !fun.call(thisp, t[i], i, t))  
+          return false;  
+      }  
+    
+      return true;  
+    }
+  });
+  
+  polyfill(Function.prototype, {
+    bind: function bind(oThis)
+    {
+      if (typeof this !== "function") {  
+        // closest thing possible to the ECMAScript 5 internal IsCallable function  
+        throw new TypeError("Function.prototype.bind - what is trying to be bound is not callable");  
+      }  
+    
+      var fSlice = Array.prototype.slice,  
+          aArgs = fSlice.call(arguments, 1),   
+          fToBind = this,   
+          fNOP = function () {},  
+          fBound = function () {  
+            return fToBind.apply(this instanceof fNOP  
+                                   ? this  
+                                   : oThis || window,  
+                                 aArgs.concat(fSlice.call(arguments)));  
+          };  
+    
+      fNOP.prototype = this.prototype;  
+      fBound.prototype = new fNOP();  
+    
+      return fBound;  
+    }
+  });
 })();
