@@ -3,9 +3,9 @@
  *
  * supported browsers:
  * - Firefox 3.6+ / Seamonkey 2 / Fennec       | [X] tested (Firefox 3.6 / Seamonkey 2.0 without transitions, Fennec needs testing)
- * - Chrome / Safari 3.2+ / MobileWebkit       | [X] tested
- * - Opera 10.5+                               | [X] tested (without FileAPI, transitions may have bugs [Opera related])
- * - MSIE 9+                                   | [X] tested (without FileAPI and transitions [maybe available in MSIE 10?])
+ * - Chrome / Safari 5.0+ / MobileWebkit       | [X] tested
+ * - Opera 10.5+                               | [X] tested (without XMLHttpRequest 2, transitions may have bugs [Opera related])
+ * - MSIE 9+                                   | [X] tested (without XMLHttpRequest 2, FileAPI and transitions/transforms/animations [maybe available in MSIE 10?])
  *
  * @version   0.0.1a1
  * @copyright 2011 <murdoc@raidrush.org>
@@ -1282,7 +1282,7 @@ var JNode = (function() {
       if (this.method === 'post') {  
         if ((window.FormData && data instanceof FormData)
          || (window.File && data instanceof File)) {
-          // add progress and upload listeners
+          // add progress and upload listeners. 
           this.transport.upload.addEventListener('progress', this.options.onProgress);
           this.transport.upload.addEventListener('load', this.options.onUpload);
         } else {
@@ -1295,9 +1295,17 @@ var JNode = (function() {
       }
       
       // add load/error/abort listener
-      this.transport.addEventListener('load', this.loaded.bind(this));
-      this.transport.addEventListener('error', this.options.onFailure);
-      this.transport.addEventListener('abort', this.options.onFailure);
+      try {
+        this.transport.addEventListener('load', this.loaded.bind(this));
+        this.transport.addEventListener('error', this.options.onFailure);
+        this.transport.addEventListener('abort', this.options.onFailure);
+      } catch (e) {
+        // opera only supports "onload", "onerror", "onabort" properties.
+        // and NO, i will not use "onreadystatechange"
+        this.transport.onload = this.loaded.bind(this);
+        this.transport.onerror = this.options.onFailure;
+        this.transport.onabort = this.options.onFailure;
+      }
       
       // send
       this.transport.send(data);

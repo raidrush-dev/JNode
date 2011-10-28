@@ -475,16 +475,12 @@ var tests = [
                 function() {
                   node.morph("opacity:.5;width:1000px", .1, 1, 
                     function() {
-                      node.morph("width:100px;background:yellow;top:200px;left:200px;opacity:1;border-color:blue;", 10, 1, 
+                      node.morph("width:100px;background:yellow;top:200px;left:200px;opacity:1;border-color:blue;rotate:360deg;scale:.5;skew:30deg", 10, 1, 
                         function() {
                           node.fade(
                             function() { 
-                              node.appear(
-                                function() {
-                                  node.remove();
-                                  passed = false; // MSIE will set this variable BEFORE return
-                                }
-                              );
+                              node.remove();
+                              passed = false; // MSIE will set this variable BEFORE return
                             }
                           );
                         }
