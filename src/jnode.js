@@ -5,7 +5,7 @@
  * - Firefox 3.6+ / Seamonkey 2 / Fennec       | [X] tested (Firefox 3.6 / Seamonkey 2.0 without transitions, Fennec needs testing)
  * - Chrome / Safari 3.2+ / MobileWebkit       | [X] tested
  * - Opera 10.5+                               | [ ] tested
- * - MSIE 8+                                   | [ ] tested (MSIE 8 without transitions)
+ * - MSIE 9+                                   | [ ] tested (MSIE 9 without transitions)
  *
  * @version   0.0.1a1
  * @copyright 2011 <murdoc@raidrush.org>
