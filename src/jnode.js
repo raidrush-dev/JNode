@@ -1536,7 +1536,6 @@ var JNode = (function() {
     
     dnode.listen(endEvent, handler, true);
     JNode.defer(function() { this.style(tstyle); }.bind(this));
-    console.log(tstyle);
     return this;
   };
   
