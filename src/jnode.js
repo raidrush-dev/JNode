@@ -4,7 +4,7 @@
  * supported browsers:
  * - Firefox 3.6+ / Seamonkey 2 / Fennec       | [X] tested (Firefox 3.6 / Seamonkey 2.0 without transitions, Fennec needs testing)
  * - Chrome / Safari 5.0+ / MobileWebkit       | [X] tested
- * - Opera 10.5+                               | [X] tested (without XMLHttpRequest 2, transitions may have bugs [Opera related])
+ * - Opera 10.5+                               | [X] tested (without XMLHttpRequest 2. transitions may have bugs [Opera related])
  * - MSIE 9+                                   | [X] tested (without XMLHttpRequest 2, FileAPI and transitions/transforms/animations [maybe available in MSIE 10?])
  *
  * @version   0.0.1a1
