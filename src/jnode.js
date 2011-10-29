@@ -170,9 +170,7 @@ var JNode = (function() {
       }
       
       var expr = "";
-      JNode.each(needle, function(v, k) { expr += ";" + k + ":" + v; });
-        
-      this.node.style.cssText += expr;
+      JNode.each(needle, function(v, k) { this.style(k, v); }, this);
       return this;
     },
     
@@ -1423,11 +1421,13 @@ var JNode = (function() {
   })();
   
   /**
-   * animates css-styles using css3-transitions/animation (if available)
+   * morph function-wrapper
    *
-   * @param   String          styles
-   * @param   Number|String   duration
-   * @param   Function        callback
+   * @param   String      styles
+   * @param   Number      duration
+   * @param   Number      delay
+   * @param   String      ease
+   * @param   Function    callback
    * @return  JNode
    */
   JNode.prototype.morph = function morph(styles, duration, delay, ease, callback)
@@ -1469,9 +1469,6 @@ var JNode = (function() {
         break;
     }
     
-    callback = callback || JNode.noop;
-    duration = duration || .5;
-    
     switch (duration) {
       case 'fast':
         duration = .1;
@@ -1481,13 +1478,35 @@ var JNode = (function() {
         duration = 5;
     }
     
-    var tstyle = "", sstyle = "", endEvent, dnode = new JNode(document);
+    callback = callback || JNode.noop;    
+    return this.anim(styles, duration, delay, ease, callback);
+  }
+  
+  /**
+   * JNode Effect Animation Engine
+   *
+   * animates css-styles using css3-transitions/transforms/animations (if available)
+   * ALL ARGUMENTS ARE REQUIRED
+   *
+   * you probably want to use .morph() instead, 
+   * which sanitizes your arguments and forwards them properly to this method.
+   *
+   * @param   String      styles
+   * @param   Number      duration
+   * @param   Number      delay
+   * @param   String      ease
+   * @param   Function    callback
+   * @return  JNode
+   */
+  JNode.prototype.anim = function anim(styles, duration, delay, ease, callback)
+  {
+    var tstyle = "", sstyle = "", endEvent, doc = new JNode(document);
     
     if (styles.indexOf(":") === -1) {
+      // keyframe animation
       if (!CSS_TRANSITION)
         return this;
         
-      // keyframe animation
       endEvent = CSS_TRANSITION.aevent;
       tstyle = sstyle = CSS_TRANSITION.vendor + "animation:" + styles + " " 
         + duration + "s " + ease + " " + delay + "s";
@@ -1500,41 +1519,41 @@ var JNode = (function() {
       }
       
       var setter = {}, transf = ""; 
-      
-      // generate style
-      sstyle = styles;
-      tstyle = sstyle + ";" + CSS_TRANSITION.vendor 
-        + "transition:all " + duration + "s " + ease + " " + delay + "s";
-        
       endEvent = CSS_TRANSITION.tevent;
       
       for (var i = 0, s = styles.split(';'), l = s.length; i < l; ++i) {
-        var split = s[i].split(':'), prop = split[0];
+        var split = s[i].split(':'), prop = split[0], val = split[1];
         
         if (!prop) continue;
         
         if (CSS_TRANSFORM.test(prop)) {
-          transf += " " + prop + "(" + split[1] + ")";
+          transf += " " + prop + "(" + val + ")";
           continue;
         }
         
         // check if the given style-property has a value.
-        // if not: use computed-style and set it as inline-style
+        // if not: use computed-style and set it as inline-style.
         var value = this.node.style.getPropertyValue(prop);
         
         if (value === "" || value === "auto")
           setter[prop] = this.style(prop);
+          
+        sstyle += ";" + prop + ':' + val;
       }
+      
+      // generate style
+      tstyle = sstyle + ";" + CSS_TRANSITION.vendor 
+        + "transition:all " + duration + "s " + ease + " " + delay + "s";
       
       if (setter) this.style(setter);
       if (transf) tstyle += ";" + CSS_TRANSITION.vendor + "transform:" + transf;
     }
     
     var handler = function() {
-      dnode.release(endEvent, handler, true);
+      doc.release(endEvent, handler, true);
       
       JNode.defer(function() {
-        // remove animations
+        // remove animations ("transition:none" throws an error in opera)
         this.style(sstyle);
       
         JNode.defer(callback, this);
@@ -1542,7 +1561,7 @@ var JNode = (function() {
       
     }.bind(this);
     
-    dnode.listen(endEvent, handler, true);
+    doc.listen(endEvent, handler, true);
     JNode.defer(function() { this.style(tstyle); }.bind(this));
     return this;
   };
@@ -1559,13 +1578,14 @@ var JNode = (function() {
     var args = SLICE.call(arguments, 0);
     args.unshift("opacity:0");
     
+    this.style("opacity:1");
     return this.morph.apply(this, args);
   };
   
   /**
    * appear-effect
    *
-   * @param   NUmber|String   duration
+   * @param   Number|String   duration
    * @param   Function        callback
    * @return  JNode
    */
@@ -1574,6 +1594,7 @@ var JNode = (function() {
     var args = SLICE.call(arguments, 0);
     args.unshift("opacity:1");
     
+    this.style("opacity:0;").show();
     return this.morph.apply(this, args);
   };
   
@@ -1852,8 +1873,8 @@ var JNode = (function() {
 
 // polyfill for MobileWebkit
 (function() {
-  if (typeof Array.isArray == "function")
-    return; // nothing to do here (javascript 1.8.5)
+  if (typeof Function.prototype.bind == "function")
+    return; // nothing to do here (javascript 1.8.6)
     
   // private
   function polyfill(object, methods) 

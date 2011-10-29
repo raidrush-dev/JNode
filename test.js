@@ -467,17 +467,17 @@ var tests = [
         pass: true,
         call: function() {
           var passed = true;          
-          var node = new JNode("div").style("position:fixed;top:1px;left:1px").append(document.body);
+          var node = new JNode("div").style("position:fixed;top:50px;left:50px;text-align:center;font-size:10px").append(document.body).insert("Hello World");
           
-          node.morph("width:100px;height:10px;background:red;border:10px solid green", "fast", 
+          node.morph("width:100px;height:20px;background:red;border:10px solid green;rotate:30deg", "fast", 
             function() {
-              node.morph("height:100px;background:green;border-color:red", "slow", 1, 
+              node.morph("height:100px;background:green;border-color:red;left:50px;top:50px;scale:1.5;border-radius:50%", "slow", 1, 
                 function() {
-                  node.morph("opacity:.5;width:1000px", .1, 1, 
+                  node.morph("opacity:.5;width:500px;left:200px;top:200px;border-radius:0", 2, 1, 
                     function() {
-                      node.morph("width:100px;background:yellow;top:200px;left:200px;opacity:1;border-color:blue;rotate:360deg;scale:.5;skew:30deg", 10, 1, 
+                      node.morph("width:100px;background:yellow;opacity:1;border-color:blue;rotate:120deg;scale:.5;skew:30deg", 10, 1, 
                         function() {
-                          node.fade(
+                          node.morph("opacity:0;rotate:1080deg;scale:5;background:blue;border-color:yellow", 1, 1,
                             function() { 
                               node.remove();
                               passed = false; // MSIE will set this variable BEFORE return
