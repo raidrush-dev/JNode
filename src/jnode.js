@@ -1604,7 +1604,7 @@ var JNode = (function() {
   // private
   var RX_EL_ID   = /^(\w+)?#([\w:]+)$/,
       RX_EL_NAME = /^[a-zA-Z]+$/,
-      RX_EL_FIX  = /^(?:html|body|head|title)$/i;
+      RX_EL_FIX  = /^(?:body|head)$/i;
   
   /**
    * finds all elements matching the given css-selector and 
