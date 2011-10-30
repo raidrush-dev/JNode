@@ -1,3 +1,4 @@
+"use strict";
 var tests = [
   {
     label: "Core",
@@ -200,7 +201,7 @@ var tests = [
                       achilds[1].node.nodeName === 'EM' &&
                       achilds[2].node.nodeName === 'STRONG';
                       
-          node = ichilds = achilds = null;
+          nodes = ichilds = achilds = null;
           
           return test1 && test2;
         }

@@ -291,7 +291,7 @@ var JNode = (function() {
      */
     remove: function remove()
     {
-      this.node.parentNode.removeChild(this.node);
+      this.purge().node.parentNode.removeChild(this.node);
       return this;
     },
     
@@ -1437,7 +1437,7 @@ var JNode = (function() {
       case 1:
         duration = .5;
         delay = 0;
-        ease = "ease";
+        ease = "linear";
         callback = JNode.noop;
         break;
         
@@ -1448,7 +1448,7 @@ var JNode = (function() {
         }
         
         delay = 0;
-        ease = "ease";
+        ease = "linear";
         break;
         
       case 3:
@@ -1457,13 +1457,13 @@ var JNode = (function() {
           delay = 0;
         }
         
-        ease = "ease";
+        ease = "linear";
         break;
         
       case 4:
         if (typeof ease === "function") {
           callback = ease;
-          ease = "ease";
+          ease = "linear";
         }
         
         break;
@@ -1549,20 +1549,27 @@ var JNode = (function() {
       if (transf) tstyle += ";" + CSS_TRANSITION.vendor + "transform:" + transf;
     }
     
-    var handler = function() {
+    var handled = false, handler = function() {
+      if (handled) return;
       doc.release(endEvent, handler, true);
       
       JNode.defer(function() {
-        // remove animations ("transition:none" throws an error in opera)
-        this.style(sstyle);
+        // remove animations
+        var nstyle = this.node.style;
+        nstyle.removeProperty(CSS_TRANSITION.vendor + "transition");
+        nstyle.removeProperty(CSS_TRANSITION.vendor + "animation");
       
         JNode.defer(callback, this);
       }.bind(this));
       
+      handled = true;
     }.bind(this);
     
     doc.listen(endEvent, handler, true);
     JNode.defer(function() { this.style(tstyle); }.bind(this));
+    
+    // force event, because no changes = no end-event (at least in firefox)
+    setTimeout(handler, (duration + 1) * 1000);
     return this;
   };
   
