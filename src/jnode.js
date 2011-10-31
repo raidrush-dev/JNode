@@ -103,12 +103,20 @@ var JNode = (function() {
     // allow hooks
     if (this.hook) this.hook();
     
+    // classlist polyfill
+    this.initClassList();
+    
     // set attributes if available
     if (attr) this.attr(attr);
   }
 
   // prototype
   JNode.prototype = {
+    // private
+    initClassList: function() {
+      this.classList = this.prop('classList');
+    },
+    
     /**
      * set/get attributes 
      *
@@ -665,6 +673,27 @@ var JNode = (function() {
     };
   }
   
+  if (typeof EL_DIV.classList === "undefined") {
+    // HTML5 classList polyfill
+    JNode.prototype.initClassList = function initClassList()
+    {
+      var node = this.node, self = this;
+      
+      function cl() { self.classList.length = node.className.toString().split(" ").length; }
+      
+      this.classList = {
+        length:   0,
+        add:      function(name) { node.className += " " + name; cl(); },
+        remove:   function(name) { node.className = node.className.replace(new RegExp("\\b" + name + "\\b", "g"), ''); cl(); },
+        contains: function(name) { return node.className.toString().match(new RegExp("\\b" + name + "\\b")) != null; },
+        item:     function(index) { return (node.className.toString().split(" ") || [])[index]; },
+        toggle:   function(a, b) { if (this.contains(a)) { this.remove(a); this.add(b); } else { this.remove(b); this.add(a); } cl(); }
+      };
+      
+      cl();
+    };
+  }
+  
   // ----------------------------------------------
   // node-list
   
@@ -740,6 +769,26 @@ var JNode = (function() {
     {
       JNode.each(this, func, context);
       return this;
+    },
+    
+    /**
+     * filters elements
+     *
+     * @param   Function    func
+     * @param   Object      context
+     * @return  JNode.List
+     */
+    filter: function filter(func, context)
+    {
+      var nodes = [];
+      
+      context && (func = func.bind(context));
+      
+      for (var i = 0, l = this.length; i < l; ++i)
+        if (false !== func(this[i], i, this))
+          nodes.push(this[i]);
+          
+      return new JNode.List(nodes);
     }
   };
   
@@ -1506,8 +1555,10 @@ var JNode = (function() {
     doc.listen(endEvent, handler, true);
     JNode.defer(function() { this.style(tstyle); }.bind(this));
     
-    // force event, because no changes = no end-event (at least in firefox)
-    setTimeout(handler, (duration + 5) * 1000);
+    // force event, because no changes or to fast duration = no end-event (at least in firefox)
+    // because upcomming effects may not function without clean-up
+    // and you properly do not want to animatate ALL upcomming .style() changes after one failed effect.
+    setTimeout(handler, (duration + 2) * 1000);
     return this;
   };
   
@@ -1585,6 +1636,24 @@ var JNode = (function() {
     var args = SLICE.call(arguments, 0);
     args.unshift("opacity:0");
     
+    switch (args.length) {
+      case 1:
+        args.push(function(node) { node.hide(); });
+        break;
+        
+      default:
+        var wrap = JNode.noop, hasc = false;
+        if (typeof args[args.length - 1] === "function") {
+          hasc = true;
+          wrap = args[args.length - 1];
+        }
+        
+        wrap = (function(c) { return function(n) { n.hide(); c(n); } })(wrap);
+        
+        if (hasc) args[args.length - 1] = wrap;
+        else args.push(wrap);
+    }
+    
     this.style("opacity:1");
     return this.morph.apply(this, args);
   };
@@ -1624,6 +1693,11 @@ var JNode = (function() {
    */
   JNode.find = function find(selector, context, first) 
   {
+    if (context === true) {
+      first   = true;
+      context = null;
+    }
+    
     context = context 
       ? (context instanceof JNode)
         ? context.node : context : document;
