@@ -1421,68 +1421,6 @@ var JNode = (function() {
   })();
   
   /**
-   * morph function-wrapper
-   *
-   * @param   String      styles
-   * @param   Number      duration
-   * @param   Number      delay
-   * @param   String      ease
-   * @param   Function    callback
-   * @return  JNode
-   */
-  JNode.prototype.morph = function morph(styles, duration, delay, ease, callback)
-  {
-    // the last argument can always be the callback
-    switch (arguments.length) {
-      case 1:
-        duration = .5;
-        delay = 0;
-        ease = "linear";
-        callback = JNode.noop;
-        break;
-        
-      case 2:
-        if (typeof duration === "function") {
-          callback = duration;
-          duration = .5;
-        }
-        
-        delay = 0;
-        ease = "linear";
-        break;
-        
-      case 3:
-        if (typeof delay === "function") {
-          callback = delay;
-          delay = 0;
-        }
-        
-        ease = "linear";
-        break;
-        
-      case 4:
-        if (typeof ease === "function") {
-          callback = ease;
-          ease = "linear";
-        }
-        
-        break;
-    }
-    
-    switch (duration) {
-      case 'fast':
-        duration = .1;
-        break;
-        
-      case 'slow':
-        duration = 5;
-    }
-    
-    callback = callback || JNode.noop;    
-    return this.anim(styles, duration, delay, ease, callback);
-  }
-  
-  /**
    * JNode Effect Animation Engine
    *
    * animates css-styles using css3-transitions/transforms/animations (if available)
@@ -1569,9 +1507,71 @@ var JNode = (function() {
     JNode.defer(function() { this.style(tstyle); }.bind(this));
     
     // force event, because no changes = no end-event (at least in firefox)
-    setTimeout(handler, (duration + 1) * 1000);
+    setTimeout(handler, (duration + 5) * 1000);
     return this;
   };
+  
+  /**
+   * morph function-wrapper
+   *
+   * @param   String      styles
+   * @param   Number      duration
+   * @param   Number      delay
+   * @param   String      ease
+   * @param   Function    callback
+   * @return  JNode
+   */
+  JNode.prototype.morph = function morph(styles, duration, delay, ease, callback)
+  {
+    // the last argument can always be the callback
+    switch (arguments.length) {
+      case 1:
+        duration = .5;
+        delay = 0;
+        ease = "linear";
+        callback = JNode.noop;
+        break;
+        
+      case 2:
+        if (typeof duration === "function") {
+          callback = duration;
+          duration = .5;
+        }
+        
+        delay = 0;
+        ease = "linear";
+        break;
+        
+      case 3:
+        if (typeof delay === "function") {
+          callback = delay;
+          delay = 0;
+        }
+        
+        ease = "linear";
+        break;
+        
+      case 4:
+        if (typeof ease === "function") {
+          callback = ease;
+          ease = "linear";
+        }
+        
+        break;
+    }
+    
+    switch (duration) {
+      case 'fast':
+        duration = .1;
+        break;
+        
+      case 'slow':
+        duration = 5;
+    }
+    
+    callback = callback || JNode.noop;    
+    return this.anim(styles, duration, delay, ease, callback);
+  }
   
   /**
    * fade-effect
@@ -1819,32 +1819,24 @@ var JNode = (function() {
    */
   JNode.each = function each(object, func, context)
   {
-    context = context || null;
+    // faster than func.call in iteration-body
+    context && (func = func.bind(context));
     
-    try {
-      // native array
-      if (Array.isArray(object))
-        return object.forEach(func, context);
-      
-      // array-like
-      if (object.length) {
-        for (var i = 0, l = object.length; i < l; ++i)
-          func.call(context, object[i], i, object);
-          
-        return;
-      }
-      
-      // object
-      var keys = Object.keys(object);
-      
-      for (var i = 0, k, l = keys.length; i < l; ++i)
-        func.call(context, object[k = keys[i]], k, object);
-    } catch (e) {
-      if (e === 0)
-        return;
+    // native array or array-like
+    if (Array.isArray(object) || object.length != void 0) {
+      for (var i = 0, l = object.length; i < l; ++i)
+        if (false === func(object[i], i, object))
+          break;
         
-      throw e;
+      return;
     }
+    
+    // object
+    var keys = Object.keys(object);
+    
+    for (var i = 0, k, l = keys.length; i < l; ++i)
+      if (false === func(object[k = keys[i]], k, object))
+        break;
   };
   
   /**
