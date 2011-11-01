@@ -104,7 +104,7 @@ var JNode = (function() {
     if (this.hook) this.hook();
     
     // classlist polyfill
-    this.initClassList();
+    this._classList();
     
     // set attributes if available
     if (attr) this.attr(attr);
@@ -113,8 +113,26 @@ var JNode = (function() {
   // prototype
   JNode.prototype = {
     // private
-    initClassList: function() {
+    _classList: function _classList() {
       this.classList = this.prop('classList');
+    },
+    
+    /**
+     * calls a method when the browser is in idle
+     * 
+     * @see     JNode.defer
+     * @param   String          method
+     * @param   ...
+     * @return  JNode
+     */
+    defer: function defer() 
+    {
+      var args = SLICE.call(arguments, 0),
+          call = args.shift(),
+          self = this;
+          
+      JNode.defer(function() { self[call].apply(self, args); });
+      return this;
     },
     
     /**
@@ -675,7 +693,7 @@ var JNode = (function() {
   
   if (typeof EL_DIV.classList === "undefined") {
     // HTML5 classList polyfill
-    JNode.prototype.initClassList = function initClassList()
+    JNode.prototype._classList = function _classList()
     {
       var node = this.node, self = this;
       
