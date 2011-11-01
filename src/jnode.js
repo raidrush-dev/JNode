@@ -1880,10 +1880,11 @@ var JNode = (function() {
       
     var nodes = [];
     
-    for (var i = 0, l = arguments.length; i < l; ++i)
-      nodes.push(init(arguments[i]));
-      
-    return new JNode.List(nodes);
+    for (var i = 0, r, l = arguments.length; i < l; ++i)
+      if ((r = init(arguments[i])) !== null) 
+        nodes.push(res);
+       
+    return nodes ? new JNode.List(nodes) : null;
   };
   
   /**
@@ -1946,7 +1947,13 @@ var JNode = (function() {
   window.$$ = JNode.find;
   window.$  = JNode.init;
   
-  JNode.noConflict = function noConflict() {
+  /**
+   * no-conflict mode
+   *
+   * @return  Object
+   */
+  JNode.noConflict = function noConflict() 
+  {
     window.$$ = JNode._$$;
     window.$  = JNode._$;
     
