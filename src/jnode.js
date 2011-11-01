@@ -697,14 +697,15 @@ var JNode = (function() {
     {
       var node = this.node, self = this;
       
-      function cl() { self.classList.length = node.className.toString().split(" ").length; }
+      function ts(c) { return c ? c.toString() : ""; }
+      function cl() { self.classList.length = ts(node.className).split(" ").length; }
       
       this.classList = {
         length:   0,
         add:      function(name) { node.className += " " + name; cl(); },
-        remove:   function(name) { node.className = node.className.replace(new RegExp("\\b" + name + "\\b", "g"), ''); cl(); },
-        contains: function(name) { return node.className.toString().match(new RegExp("\\b" + name + "\\b")) != null; },
-        item:     function(index) { return (node.className.toString().split(" ") || [])[index]; },
+        remove:   function(name) { node.className = ts(node.className).replace(new RegExp("\\b" + name + "\\b", "g"), ''); cl(); },
+        contains: function(name) { return ts(node.className).match(new RegExp("\\b" + name + "\\b")) != null; },
+        item:     function(index) { return (ts(node.className).split(" ") || [])[index]; },
         toggle:   function(a, b) { if (this.contains(a)) { this.remove(a); this.add(b); } else { this.remove(b); this.add(a); } cl(); }
       };
       
@@ -1508,21 +1509,12 @@ var JNode = (function() {
     var tstyle = "", sstyle = "", endEvent, doc = new JNode(document);
     
     if (styles.indexOf(":") === -1) {
-      // keyframe animation
-      if (!CSS_TRANSITION)
-        return this;
-        
+      // keyframe animation        
       endEvent = CSS_TRANSITION.aevent;
       tstyle = sstyle = CSS_TRANSITION.vendor + "animation:" + styles + " " 
         + duration + "s " + ease + " " + delay + "s";
     } else {
       // css transition
-      if (!CSS_TRANSITION) {
-        this.prop('style').cssText += ";" + styles;
-        callback(this);
-        return this;
-      }
-      
       var setter = {}, transf = ""; 
       endEvent = CSS_TRANSITION.tevent;
       
@@ -1579,6 +1571,38 @@ var JNode = (function() {
     setTimeout(handler, (duration + 2) * 1000);
     return this;
   };
+  
+  if (!CSS_TRANSITION) {
+    // MSIE9 does not support transitions, but transforms
+    JNode.prototype.anim = function anim(styles, duration, delay, ease, callback)
+    {
+      // unused
+      duration = delay = ease = void 0;
+    
+      if (styles.indexOf(":") > -1) {
+        var sstyle = "", transf = "";
+        
+        for (var i = 0, s = styles.split(";"), l = s.length; i < l; ++i) {
+          var split = s[i].split(':'), prop = split[0], val = split[1];
+          
+          if (!prop) continue;
+          
+          if (CSS_TRANSFORM.test(prop)) {
+            transf += " " + prop + "(" + val + ")";
+            continue;
+          }
+            
+          sstyle += ";" + prop + ':' + val;
+        }
+        
+        if (transf) sstyle += ";-ms-transform:" + transf;
+        this.node.style.cssText += sstyle;
+      }
+      
+      callback(this);
+      return this;
+    };
+  }
   
   /**
    * morph function-wrapper
