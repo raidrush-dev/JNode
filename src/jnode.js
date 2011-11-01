@@ -466,13 +466,13 @@ var JNode = (function() {
       if (data instanceof JNode)
         data = data.node;
       // create element(s)
-      else if (!(data instanceof Node) && !(data instanceof NodeList) && !Array.isArray(data))
+      else if (!(data instanceof Node) && !Array.isArray(data))
         return this._insertString(data, pos);
       
       // grab method
       var mth = INSERTION[pos] || INSERTION['bottom'];
       
-      if (!Array.isArray(data) && !(data instanceof NodeList)) {
+      if (!Array.isArray(data)) {
         // must be an element
         mth(this.node, data);
         return this;
@@ -482,8 +482,14 @@ var JNode = (function() {
         data.reverse();
       
       //for each(var node in data)
-      for (var i = 0, node; node = data[i]; ++i) 
+      for (var i = 0, l = data.length; i < l; ++i) { 
+        var node = data[i];
+        
+        if (node instanceof JNode)
+          node = node.node;
+          
         mth(this.node, node);
+      }
       
       return this;    
     },
