@@ -1052,12 +1052,12 @@ var JNode = (function() {
       if (element instanceof JNode)
         element = element.node;
         
-      useCapture = useCapture && useCapture === true ? useCapture : false;
+      useCapture = useCapture && useCapture === true;
       
       // dom:loaded | dom:ready -> DOMContentLoaded
       if (eventName === 'dom:loaded' || eventName === 'dom:ready') {
         // this only works if you use dom: ..., 
-        // DOMContentLoaded has no special behaivor
+        // DOMContentLoaded has no special behavior
         if (JNode.loaded === true) {
           // document is loaded. execute handler and return
           handler.call(element);
@@ -1147,7 +1147,7 @@ var JNode = (function() {
      * @param   Boolean           bubble
      * @void
      */
-    JNode.fire = function fire(element, type, meta, bubble) {
+    JNode.fire = function fire(element, eventName, meta, bubble) {
       bubble = bubble ? !!bubble : true;
       
       if (!meta) meta = {};
@@ -1155,7 +1155,7 @@ var JNode = (function() {
       var event = document.createEvent('HTMLEvents');
       event.initEvent('dataavailable', bubble, true);
       
-      event.eventName = type;
+      event.eventName = eventName;
       event.meta = meta;
       
       element.dispatchEvent(event);
@@ -1194,9 +1194,9 @@ var JNode = (function() {
      * @see     JNode.fire
      * @return  JNode
      */
-    JNode.prototype.fire = function fire(eventName, useCapture)
+    JNode.prototype.fire = function fire(eventName, meta, bubble)
     {
-      JNode.fire(this.node, eventName, useCapture);
+      JNode.fire(this.node, eventName, meta, bubble);
       return this;
     };
     
@@ -1875,7 +1875,7 @@ var JNode = (function() {
       
       // MSIE 9
       if (disconnectedMatch && !node.parentNode) {
-        // VERY SLOW, but this is the only way to emulate the expected behaivor
+        // VERY SLOW, but this is the only way to emulate the expected behavior
         var parentNode = new JNode("div");
         parentNode.style("display:none;position:absolute;top:-100px;left:-100px").append(document.body); // reflow + repaint
         parentNode.insert(node.cloneNode(true)); // reflow + repaint
