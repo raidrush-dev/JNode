@@ -7,7 +7,7 @@
  * - Opera 10.5+                               | [X] tested (without XMLHttpRequest 2. transitions may have bugs [Opera related])
  * - MSIE 9+                                   | [X] tested (without XMLHttpRequest 2, FileAPI and transitions/animations [maybe available in MSIE 10?])
  *
- * @version   0.0.1a1
+ * @version   0.0.1a2
  * @copyright 2011 <murdoc@raidrush.org>
  */
  
@@ -1536,6 +1536,7 @@ var JNode = (function() {
         
         // check if the given style-property has a value.
         // if not: use computed-style and set it as inline-style.
+        // see bug: https://bugzilla.mozilla.org/show_bug.cgi?id=571344
         var value = this.node.style.getPropertyValue(prop);
         
         if (value === "" || value === "auto")
