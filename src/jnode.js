@@ -1913,7 +1913,7 @@ var JNode = (function() {
     
     for (var i = 0, r, l = arguments.length; i < l; ++i)
       if ((r = init(arguments[i])) !== null) 
-        nodes.push(res);
+        nodes.push(r);
        
     return nodes ? new JNode.List(nodes) : null;
   };
