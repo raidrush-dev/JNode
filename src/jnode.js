@@ -759,27 +759,6 @@ var JNode = (function() {
   // ----------------------------------------------
   // node-list
   
-  var CAN_USE_OBJECT_GETTER = (function() {
-    var o = {};
-    
-    try {
-      Object.defineProperty(o, 0, {
-        get: function() { return 1; }
-      });
-    } catch (e) {
-      try {
-        o.__defineGetter__(0, function() { return 1; });
-      } catch (e) {
-        return false;
-      }
-    }
-    
-    return o[0] === 1;
-  });
-  
-  var MOZ_DEFINE_GETTER = CAN_USE_OBJECT_GETTER && 
-    !Object.defineProperty && ({}).__defineGetter__;
-  
   // class-body
   JNode.List = function JList(nodes)
   {
@@ -873,40 +852,6 @@ var JNode = (function() {
       return new JNode.List(nodes);
     }
   };
-  
-  (function() {
-    // only extend elements if necessary
-    if (CAN_USE_OBJECT_GETTER) {
-      JNode.List.prototype._nodes = [];
-      
-      // getter
-      JNode.List.prototype._get = function _get(index) 
-      {
-        if (this._nodes[index] instanceof JNode)
-          return this._nodes[index];
-          
-        this._nodes[index] = new JNode(this._nodes[index]);
-        return this._nodes[index];
-      };
-      
-      // process-override
-      JNode.prototype.process = (function() {
-        if (MOZ_DEFINE_GETTER) {  
-          // older mozilla-browsers
-          return function(index, node) { 
-            this._nodes.push(node);
-            this.__defineGetter__(index, this.get.bind(this, index));
-          }
-        }
-        
-        // javascript 1.8.5 
-        return function(index, node) {
-          this._nodes.push(node);
-          Object.defineProperty(this, index, { get: this._get.bind(this, index) });
-        };
-      })();
-    }
-  })();
   
   // ----------------------------------------------
   // storage
