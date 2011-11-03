@@ -40,15 +40,19 @@ var JNode = (function() {
 
   /** @private */
   var INSERTION = {
+    /** @private */
     before: function(element, node) {
       element.parentNode.insertBefore(node, element);
     },
+    /** @private */
     top: function(element, node) {
       element.insertBefore(node, element.firstChild);
     },
+    /** @private */
     bottom: function(element, node) {
       element.appendChild(node);
     },
+    /** @private */
     after: function(element, node) {
       element.parentNode.insertBefore(node, element.nextSibling);
     },
@@ -141,7 +145,8 @@ var JNode = (function() {
     },
     
     /**
-     * calls a method when the browser is in idle
+     * Ruft eine Methode der Klasse JNode auf, 
+     * wenn der Browser für kurze Zeit nichts weiter zu tun hat (idle).
      * 
      * @see       JNode.defer
      * @param     {String}          method
@@ -159,7 +164,12 @@ var JNode = (function() {
     },
     
     /**
-     * set/get attributes 
+     * Ändert oder gibt Attribute des Elements zurück.
+     *
+     * @example var node = new JNode("div"); 
+     * node.attr("title", "test"); // schreibt das Attribut "title" mit Inhalt "test"
+     * node.attr("title"); // gibt das Attribut "title" zurück. Inhalt: "test"
+     * node.attr("title", null); // entfernt das Attribut "title"
      *
      * @param     {String|Object}     needle
      * @param     {String|undefined}  value
@@ -188,7 +198,13 @@ var JNode = (function() {
     },
     
     /**
-     * set/get style-properties
+     * Ändert oder gibt Style-Eigenschaften zurück.
+     *
+     * @example var node = new JNode("div");
+     * node.style("width", "100px"); // setzt die width-Eigenschaft auf 100px
+     * node.style("width:200px;"); // setzt die width-Eigenschaft auf 200px (Alternativsyntax)
+     * node.style("width"); // gibt die width-Eigenschaft zurück. Inhalt: 200px
+     * node.style("width", null); // entfernt die width-Eigenschaft
      *
      * @param     {String|Object}     needle
      * @param     {String|undefined}  value
@@ -229,7 +245,10 @@ var JNode = (function() {
     },
     
     /**
-     * hides the element
+     * Versteckt das Element (display:none)
+     *
+     * @example var node = new JNode(document.body);
+     * node.hide(); // setzt die CSS display-Eigenschaft auf "none"
      *
      * @returns  {JNode}
      */
@@ -239,7 +258,26 @@ var JNode = (function() {
     },
     
     /**
-     * removes the display:hide property
+     * Zeigt das Element an (display-Eigenschaft wird entfernt)
+     *
+     * @example var node = new JNode(document.body);
+     * node.hide(); // siehe JNode#hide()
+     * node.show(); // zeigt das Element wieder an.
+     *
+     * @example Achtung: 
+     * Wenn ein Element über eine externe Quelle per CSS 
+     * &lt;style&gt; oder &lt;link .../&gt; versteckt wurde, 
+     * zeigt die Verwendung von JNode#show() keine Wirkung, da hierbei nur 
+     * die Inline-Style-Eigenschaft "display" entfernt, nicht aber 
+     * überschrieben wird.
+     *
+     * &lt;style type="text/css"&gt;
+     *    #idref { display:none; }
+     * &lt;/style&gt;
+     *
+     * &lt;script type="text/javascript"&gt;
+     *    $("idref").show(); // Funktioniert nicht wie erwartet
+     * &lt;/script&gt;
      *
      * @returns  {JNode}
      */
@@ -252,7 +290,21 @@ var JNode = (function() {
     },
     
     /**
-     * get/set dataset properties
+     * Ändert oder gibt Daten zurück, die über die HTML5 dataset-Eigenschaft
+     * definiert wurden.
+     *
+     * @example &lt;div id="idref" data-foo="bar"/&gt;
+     * @example $("idref").data("foo"); // Inhlat: "bar"
+     * $("idref").data("foo", "baz"); // Überschreibt den Index "foo" mit "baz"
+     * $("idref").data("bar", 1234); // legt einen neuen Index "bar" mit dem Wert 1234 an
+     *
+     * @example Bitte beachten:
+     * Alle Objekte, die über die dataset-Eigenschaft gespeichert werden, ergeben
+     * echte HTML-Attribute. Daher sollten nur scalar-Werte (Number, Boolean, String) 
+     * abgelegt werden.
+     *
+     * Komplexere Objekte können über JNode#store() gespeichert werden.
+     * 
      *
      * @param     {String}            needle
      * @param     {String|undefined}  value
@@ -269,7 +321,13 @@ var JNode = (function() {
     },
     
     /**
-     * select elements inside
+     * Sucht nach Kind-Elementen innerhalb des aktuellen Elements 
+     * anhand eines CSS-Selektors.
+     *
+     * @example &lt;div id="idref"&gt;&lt;p&gt;&lt;span&gt;&lt;em&gt;Beispiel&lt;/em&gt;&lt;/span&gt;&lt;/p&gt;&lt;/div&gt;
+     * @example $("idref").select('span, em'); // Gibt eine JNode.List zurück
+     * // mit den Elementen &lt;span&gt; und &lt;em&gt; zurück
+     *
      *
      * @param     {String}        selector
      * @returns   {JNode.List}
@@ -281,7 +339,11 @@ var JNode = (function() {
     },
     
     /**
-     * set/get properties of the dom-node
+     * Ändert oder gibt Eigenschaften zurück.
+     *
+     * @example &lt;div id="idref"&gt;&lt;/div&gt;
+     * @example $("idref").prop('nodeName'); // gibt "DIV" zurück
+     * @example $("idref").prop('innerHTML', 'test!'); // Schreibt "test!" in innerHTML
      *
      * @param     {String}            needle
      * @param     {Object|undefined}  value
@@ -298,7 +360,12 @@ var JNode = (function() {
     },
     
     /**
-     * creates a new unique id
+     * Erstellt ein eindeutiges ID-Attribut, falls noch keines vergeben wurde.
+     *
+     * @example var id = $("&lt;div/&gt;").append(document.body).identify(); 
+     * // Speichert das Element innerhalb des &lt;body&gt;-Elements und erzeugt
+     * // eine referenzierbare ID
+     * var node = $(id); // findet das oben erstellte Element im Dokument
      *
      * @return  String
      */
@@ -318,7 +385,16 @@ var JNode = (function() {
     },
     
     /**
-     * wraps the element into an other element
+     * Umhüllt das aktuelle Element mit einem angegegenen Element
+     * 
+     * @example var node = new JNode('p'); // erzeugt ein P-Element
+     * node.append(document.body); // Speichert das Element innerhalb von &lt;body&gt;
+     *
+     * @example &lt;p&gt;&lt;/p&gt;
+     *
+     * @example node.wrap('div');
+     *
+     * @example &lt;div&gt;&lt;p&gt;&lt;/p&gt;&lt;/div&gt;
      *
      * @param     {Element|JNode|String}    wrapper
      * @returns   {JNode}
@@ -340,7 +416,8 @@ var JNode = (function() {
     },
     
     /**
-     * removes the element from its parent
+     * Entfernt alle Events und Storage-Eigenschaften von diesem, sowie von 
+     * Kind-Elementen und löscht dieses aus dem Dokument.
      *
      * @returns  {JNode}
      */
@@ -351,7 +428,7 @@ var JNode = (function() {
     },
     
     /**
-     * returns all childnodes
+     * Gibt alle Kind-Elemente zurück (keine Text-Knoten)
      *
      * @param     {Boolean}       all
      * @returns   {JNode.List}
@@ -376,19 +453,34 @@ var JNode = (function() {
     },
     
     /**
-     * returns the first matching node for the given css-selector
+     * Gibt das erste Element zurück, welches zu den angegebenen CSS-Selector passt.
+     * Ist kein CSS-Selector angegeben, wird das erste Element zurückgegben.
+     *
+     * @example &lt;div id="idref"&gt;&lt;p&gt;&lt;span<&gt;&lt;/span&gt;&lt;/p&gt;&lt;/div&gt;
+     * @example $("idref").first(); // gibt das darauf erste P-Element zurück
+     * @example $("idref").first('span'); // gibt das erste SPAN-Element zurück
      *
      * @param     {String}        selector
-     * @returns   {JNode.List}
+     * @returns   {JNode|null}
      */
     first: function first(selector) 
     {
-      return JNode.find(selector || '*', this.node, true) 
-        || new JNode.List(EMPTY_ARRAY); // will not break code if `null` is returned
+      return JNode.find(selector || '*', this.node, true);
     },
     
     /**
-     * return tue if the given selector would match this node
+     * Prüft, ob das aktuelle Element mit dem übergebenen CSS-Selektor gefunden werden 
+     * kann. 
+     *
+     * @example &lt;p id="idref"&gt;&lt;/p&gt;
+     * @example $("idref").match("p"); // Ergibt TRUE. "p" passt auf unser Element
+     * $("idref").match("div"); // Ergibt FALSE. "div" passt nicht auf "p"
+     * $("idref").match("#idref"); // Ergibt TRUE, #idref passt auf dieses Element
+     *
+     * @example Achtung:
+     * Internet Explorer und MobileWebkit-basierte Browser neigen hier zu 
+     * Geschwindigkeitseinbußen. Im Internet Explorer jedoch nur, wenn das Element NICHT
+     * im aktuellen Dokument existiert (z.b. weil dieses eben erst erstellt wurde).
      *
      * @param     {String}    selector
      * @returns   {Boolean}
@@ -399,8 +491,11 @@ var JNode = (function() {
     },
     
     /**
-     * returns the parent-node as JNode
+     * Gibt das Elternelement oder, wenn dieses nicht existiert, sich selbst zurück.
      *
+     * @example &lt;div&gt;&lt;p id="idref"&gt;&lt;/p&gt;&lt;/div&gt;
+     * @example $("idref").parent(); // Gibt das übergeornete DIV-Element zurück.
+     * 
      * @returns   {JNode}
      */
     parent: function parent()
@@ -410,7 +505,10 @@ var JNode = (function() {
     },
     
     /**
-     * walks the DOM up
+     * Wandert Elemente ausgehend vom aktuellen nach oben im Dokument.
+     *
+     * @example &lt;div&gt;&lt;p id="idref"&gt;&lt;/p&gt;&lt;/div&gt;
+     * @example $("idref").up("div"); // Wandert zum übergeordnetem DIV-Element
      * 
      * @param     {String}        selector
      * @returns   {JNode|null}
@@ -438,7 +536,10 @@ var JNode = (function() {
     },
     
     /**
-     * walks the DOM down
+     * Wandert Elemente ausgehend vom aktuellen nach unten im Dokument.
+     *
+     * @example &lt;div id="idref"&gt;&lt;p&gt;&lt;/p&gt;&lt;/div&gt;
+     * @example $("idref").down("p"); // Wandert zum untergeorndetem P-Element
      *
      * @param     {String}        selector
      * @returns   {JNode|null}
@@ -455,7 +556,10 @@ var JNode = (function() {
     },
     
     /**
-     * returns the next matching mode
+     * Gibt das nächste Element auf der selben Ebene zurück
+     *
+     * @example &lt;div id="idref"&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
+     * @example $("idref").next("p"); // Gibt das folgende P-Element zurück
      *
      * @param     {String}    selector
      * @returns   {JNode|null}
@@ -486,10 +590,45 @@ var JNode = (function() {
     },
     
     /**
-     * inserts content before/after/top/bottom the element-node
+     * Fügt Elemente oder Texte an der angegebenen Position in das Element ein
      *
-     * @param     {String|Element|JNode|Array[Node]} data
-     * @param     {String}                           pos
+     * @example var node = new JNode("div");
+     * node.insert("hallo");
+     * node.insert(new JNode('span').insert("welt"));
+     * node.insert("1234", "top"); // top: Fügt die Daten an den Anfang hinzu
+     * node.insert("5678", "before"); // before: Fügt die Daten vor das Element hinzu
+     * node.insert("9123", "after"); // after: Fügt die Daten nach das Element hinzu
+     * node.insert("4567", "bottom"); // bottom: Fügt die Daten ans Ende des Elements hinzu
+     *
+     * @example Bitte beachten:
+     * Unter Firefox agiert diese Methode ein wenig langsamer als normal, da
+     * native Unterstützung für das Einfügen von Texten/Elementen an bestimmten Positionen
+     * nicht oder nur teilweiße/über Umwege gegeben ist.
+     *
+     * Sie sollten daher immer möglichst viele Daten auf einmal hinzufügen.
+     *
+     * @example node.insert("hallo" + " " + "welt"); // Schneller als:
+     * node.insert("hallo").insert(" ").insert("welt");
+     *
+     * @example Mehrere Elemente können als Array übergeben werden, doch auch hier
+     * ist es Ratsam diese in ein DocumentFragment zu packen.
+     *
+     * @example // Langsamer:
+     * node.insert([
+     *   document.createElement("div"),
+     *   document.createElement("div"),
+     *   document.createElement("div")
+     * ]);
+     *
+     * // Schneller:
+     * var fragment = document.createDocumentFragment();
+     * fragement.appendChild(document.createElement("div"));
+     * fragement.appendChild(document.createElement("div"));
+     * fragement.appendChild(document.createElement("div"));
+     * node.insert(fragment);
+     *
+     * @param     {String|Node|JNode|Array[Node]} data
+     * @param     {String}                        pos
      * @returns   {JNode}
      */
     insert: function insert(data, pos)
@@ -507,7 +646,7 @@ var JNode = (function() {
       return this.insertNode(data, pos);    
     },
     
-    // polyfill for insertAdjacentHTML
+    /** @private */
     insertText: function(content, pos) 
     {
       var div = EL_DIV, mth;
@@ -537,7 +676,7 @@ var JNode = (function() {
       return this.insertNode(nodes, pos);
     },
     
-    // polyfill for insertAdjacentElement
+    /** @private */
     insertNode: function(content, pos) 
     {
       // grab method
@@ -566,16 +705,24 @@ var JNode = (function() {
     },
     
     /**
-     * updates the nodes content
+     * Erneuert den Inhalt des Elements in dem es zuvor alle aktuellen Inhalte entfernt.
      *
-     * @param     {String|Element|JNode|Array[Node]}    content
+     * @example Diese Funktion entspricht JNode#insert() mit dem Unterschied,
+     * dass mit dieser Methode alle Inhalte zuvor entfernt werden. 
+     *
+     * Folglich existiert auch kein `pos` Parameter, da die Daten immer innerhalb
+     * anstelle des alten Inhalts platziert werden.
+     *
+     * Alle Kindelemente werden vor dem entfernen noch von Events 
+     * und Storage-Eigenschaften befreit (siehe dazu JNode.remove())
+     *
+     * @param     {String|Node|JNode|Array[Node]}    content
      * @returns   {JNode}
      */
     update: function update(content)
     { 
       // purge all childs
-      var childs = this.childs(true);
-      if (childs) childs.invoke('purge');
+      this.childs(true).invoke('purge');
       
       if (content instanceof JNode)
         content = content.node;
@@ -590,9 +737,16 @@ var JNode = (function() {
     },
     
     /**
-     * adds this node to an other node.
-     * if this node has already a parent-node, 
-     * a clone (without `id`) will be used instead.
+     * Fügt das aktuelle Element in das angegebene Element ein.
+     *
+     * @example var node = new JNode("div");
+     * node.append(document.body); // fügt das Element in &lt;body&gt;-Element ein
+     *
+     * @example Falls Sie, wie in der Methode JNode.insert() die Position angeben möchten,
+     * können Sie auch so vorgehen:
+     *
+     * var node = new JNode("div");
+     * $(document.body).insert(node, "position");
      *
      * @param     {Element|JNode}   element
      * @return    {JNode}
@@ -612,7 +766,7 @@ var JNode = (function() {
     },
     
     /**
-     * clones the node
+     * Kopiert das Element und entfernt, falls gewünscht das ID-Attribut.
      * 
      * @param     {Boolean}   deep
      * @param     {Boolean}   removeId
@@ -629,7 +783,7 @@ var JNode = (function() {
     },
     
     /**
-     * creates/returns the element-storage
+     * Erstellt und gibt das Storage-Objekt für dieses Element zurück.
      *
      * @returns   {Object}
      */
@@ -659,7 +813,7 @@ var JNode = (function() {
     },
     
     /**
-     * stores data in the element-storage
+     * Speichert Daten im Storage-Objekt
      *
      * @param     {String}    needle
      * @param     {Object}    value
@@ -674,7 +828,7 @@ var JNode = (function() {
     },
     
     /**
-     * returns a stored value
+     * Gibt ein gespeichertes Objekt zurück.
      *
      * @param     {String}            needle
      * @param     {Object}            fallback
@@ -691,7 +845,7 @@ var JNode = (function() {
     },
     
     /**
-     * removes all event-handlers and storage-entries
+     * Entfernt alle Events und löscht alle gespeicherten Daten im Storage-Objekt
      *
      * @returns   {JNode}
      */
@@ -736,6 +890,7 @@ var JNode = (function() {
     
     if (typeof EL_DIV.insertAdjacentHTML === "function") {
       // supported in all browsers except firefox < 8
+      /** @private */
       JNode.prototype.insertText = function insertText(content, pos) 
       {
         this.node.insertAdjacentHTML(convertPosition(pos), content);
@@ -745,6 +900,7 @@ var JNode = (function() {
     
     if (typeof EL_DIV.insertAdjacentElement == "function") {
       // supported in MSIE/webkit-based browsers
+      /** @private */
       JNode.prototype.insertNode = function insertNode(content, pos) 
       {
         this.node.insertAdjacentElement(convertPosition(pos). content);
@@ -772,16 +928,25 @@ var JNode = (function() {
     {
       var node = this.node, self = this;
       
+      /** @private */
       function ts(c) { return c ? c.toString() : ""; }
+      
+      /** @private */
       function cl() { self.classList.length = ts(node.className).split(" ").length; }
       
       this.classList = {
         length:   0,
+        /** @private */
         add:      function(name) { node.className += " " + name; cl(); },
+        /** @private */
         remove:   function(name) { node.className = ts(node.className).replace(new RegExp("\\b" + name + "\\b", "g"), ''); cl(); },
+        /** @private */
         contains: function(name) { return ts(node.className).match(new RegExp("\\b" + name + "\\b")) != null; },
+        /** @private */
         item:     function(index) { return (ts(node.className).split(" ") || [])[index]; },
+        /** @private */
         toggle:   function(name) { this[this.contains(name) ? 'remove' : 'add'](name); cl(); },
+        /** @private */
         toString: function() { return ts(this.node.className); }
       };
       
@@ -897,14 +1062,15 @@ var JNode = (function() {
   // TODO: use sessionStorage
   
   /**
-   * storage-object for elements/window
+   * In diesem Objeckt werden alle Daten gespeichert die per 
+   * JNode#store() oder JNode.store() hinzugefügt wruden.
    *
    * @static
    */
   JNode.Storage = {};
   
   /**
-   * returns the global storage object
+   * Gibt das globale Storage-Objekt zurück (bezieht sich auf `window`).
    *
    * @static
    * @returns   {Object}
@@ -918,7 +1084,7 @@ var JNode = (function() {
   };
   
   /**
-   * stores data in the global storage
+   * Speichert Daten im globalen Storage-Objekt
    *
    * @static
    * @param     {String}    needle
@@ -930,7 +1096,7 @@ var JNode = (function() {
   };
   
   /**
-   * returns data from the global storage
+   * Gibt daten aus dem globalen Storage-Objekt zurück.
    *
    * @static
    * @param     {String}    needle
@@ -948,7 +1114,7 @@ var JNode = (function() {
   };
   
   /**
-   * removes all event-handlers and deletes all storage-entries
+   * Entfernt alle Events und löscht alle Daten des globalen Storage-Objekts
    *
    * @static
    */
@@ -1120,7 +1286,7 @@ var JNode = (function() {
     // ----------------------------------------------
     
     /**
-     * adds an event-listener to an element or the window-object
+     * Fügt einen Event-Handler hinzu
      *
      * @event
      * @static
@@ -1166,7 +1332,7 @@ var JNode = (function() {
     };
     
     /**
-     * removes all/a specific event-listener
+     * Entfernt einen Event-Handler
      *
      * @event
      * @static
@@ -1222,7 +1388,7 @@ var JNode = (function() {
     };
     
     /**
-     * fires an event
+     * Feuert einen Benutzerevent
      *
      * @event
      * @static
@@ -1246,7 +1412,7 @@ var JNode = (function() {
     };
     
     /**
-     * this is just a wrapper for JNode.observe
+     * Entspricht JNode.listen(), bezieht sich aber auf das aktuelle Element
      * 
      * @event
      * @see       JNode.observe
@@ -1259,7 +1425,7 @@ var JNode = (function() {
     };
     
     /**
-     * this is just a wrapper for JNode.stopObserving
+     * Entspricht JNode.release(), bezieht sich aber auf das aktuelle Element
      *
      * @event
      * @see       JNode.release
@@ -1275,7 +1441,7 @@ var JNode = (function() {
     };
     
     /**
-     * this is just a wrapper for JNode.fire
+     * Entspricht JNode.fire(), bezieht sich aber auf das aktuelle Element
      *
      * @event
      * @see       JNode.fire
@@ -1319,7 +1485,7 @@ var JNode = (function() {
     // prototype
     JNode.Event.prototype = {
       /**
-       * returns the target-element
+       * Gibt das Ziel-Element zurück
        *
        * @returns   {JNode}
        */
@@ -1344,7 +1510,7 @@ var JNode = (function() {
       },
       
       /**
-       * stops the event
+       * Stoppt den Event
        *
        * @returns   {JNode.Event}
        */
@@ -1359,7 +1525,7 @@ var JNode = (function() {
       },
       
       /**
-       * JHP.Event->pointer() -> Object
+       * Gibt die aktuelle Mauszeigerposition zurück
        *
        * @returns   {Object}
        */
@@ -1400,7 +1566,7 @@ var JNode = (function() {
     this.url = url;
     
     /** 
-     * ajax/jsonp options
+     * AJAX/JSONP Optionen
      *
      * @field 
      */
@@ -1423,7 +1589,7 @@ var JNode = (function() {
     JNode.each(options, function(v, k) { this.options[k] = v; }, this);
     
     /** 
-     * ajax-method
+     * AJAX Anfragemethode
      * 
      * @field 
      */
@@ -1434,7 +1600,7 @@ var JNode = (function() {
   // prototype
   JNode.Request.prototype = {    
     /**
-     * initializes the request
+     * Initialisiert die Anfrage
      *
      */
     request: function request()
@@ -1463,7 +1629,7 @@ var JNode = (function() {
       
       // AJAX
       /** 
-       * XMLHttpRequest instance
+       * XMLHttpRequest Instanz
        *
        * @field 
        */
@@ -1471,18 +1637,27 @@ var JNode = (function() {
       this.transport.open(this.method, this.url, this.options.async);
       
       // set request headers
-      this.setRequestHeaders();
+      this.transport.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+      this.transport.setRequestHeader('Accept', 'text/javascript, text/html, application/xml, text/xml, *' + '/' + '*'); // notepad++ bug
       
       var data = this.options.data;
       
       // prepare body
       if (this.method === 'post') {  
+        this.transport.setRequestHeader('Content-type', this.options.contentType
+          + (this.options.encoding ? '; Charset=' + this.options.encoding : ''));
+          
         if ((window.FormData && data instanceof FormData)
          || (window.File && data instanceof File)) {
           // add progress and upload listeners. 
-          this.transport.upload.addEventListener('progress', this.options.onProgress);
-          this.transport.upload.addEventListener('load', this.options.onUpload);
-        } else {
+          try {
+            this.transport.upload.addEventListener('progress', this.options.onProgress);
+            this.transport.upload.addEventListener('load', this.options.onUpload);
+          } catch (e) {
+            // XMLHttpRequest Level 2
+            // not supported in opera
+          }
+        } else if (typeof data !== "string") {
           data = [];
           
           // generate key=value pairs
@@ -1509,7 +1684,7 @@ var JNode = (function() {
     },
     
     /**
-     * handles the response
+     * Verarbeitet die Serverantwort
      *
      */
     loaded: function loaded()
@@ -1547,25 +1722,12 @@ var JNode = (function() {
       }
       
       this.options.onFailure(res);
-    },
-
-    /**
-     * sets all required request-headers
-     *
-     */
-    setRequestHeaders: function setRequestHeaders()
-    {
-      this.transport.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-      this.transport.setRequestHeader('Accept', 'text/javascript, text/html, application/xml, text/xml, *' + '/' + '*'); // notepad++ bug
-      
-      if (this.method === 'post')
-        this.transport.setRequestHeader('Content-type', this.options.contentType
-          + (this.options.encoding ? '; Charset=' + this.options.encoding : ''));
+    } 
     }
   };
   
   /**
-   * loads data via ajax and insert them into the node
+   * Läd über AJAX/JSONP Daten und fügt diese direkt in das aktuelle Element ein.
    *
    * @param     {String}    url
    * @param     {Object}    options
@@ -1573,6 +1735,9 @@ var JNode = (function() {
    */
   JNode.prototype.load = function load(url, options)
   {
+    options || (options = {});
+    
+    /** @private */
     options.onSuccess = function(res) {
       this.update(res.text);
     }.bind(this);
@@ -1608,6 +1773,7 @@ var JNode = (function() {
     if (vendor === false)
       return false;
     
+    /** @private */
     function mkevent(name) { return prefix ? prefix + name : name.toLowerCase(); }
       
     return {  
@@ -1620,11 +1786,15 @@ var JNode = (function() {
   /**
    * JNode Effect Animation Engine
    *
-   * animates css-styles using css3-transitions/transforms/animations (if available)
-   * ALL ARGUMENTS ARE REQUIRED
+   * Animiert CSS-Eigenschaften mithilfe von CSS3-Transitions/Transforms und Animationen.
    *
-   * you probably want to use .morph() instead, 
-   * which sanitizes your arguments and forwards them properly to this method.
+   * @example Diese Methode benötigt ALLE Argumente und geht davon aus, dass
+   * diese so übergeben wurden, wie Sie benötigt werden.
+   *
+   * Anders hingehen arbeitet die Methode JNOde#morph(), welche die übergebenen Argumente
+   * so anpasst, dass JNode#anim() damit arbeiten kann.
+   *
+   * Daher sollte vorzugsweise mit JNode#morph() gearbeitet werden.
    *
    * @param     {String}      styles
    * @param     {Number}      duration
@@ -1735,7 +1905,7 @@ var JNode = (function() {
   }
   
   /**
-   * morph function-wrapper
+   * Diese Methode dient als Vermittler für JNode#anim()
    *
    * @param     {String}      styles
    * @param     {Number}      duration
@@ -1797,7 +1967,7 @@ var JNode = (function() {
   }
   
   /**
-   * fade-effect
+   * Fade-Effekt
    *
    * @param     {Number|String}   duration
    * @param     {Function}        callback
@@ -1831,7 +2001,7 @@ var JNode = (function() {
   };
   
   /**
-   * appear-effect
+   * Appear-Effekt
    *
    * @param     {Number|String}   duration
    * @param     {Function}        callback
@@ -1855,8 +2025,10 @@ var JNode = (function() {
       RX_EL_FIX  = /^(?:body|head)$/i;
   
   /**
-   * finds all elements matching the given css-selector and 
-   * returns them as an array of JNodes
+   * Findet alle Elemente, die auf den angegebenen CSS-Selektor passen.
+   *
+   * @example Dise Funktion ist, falls JNode.noConflict() nicht verwendet wurde, global
+   * unter dem Shortcut $$ erreichbar.
    *
    * @static
    * @param     {String}          selector
@@ -1924,7 +2096,9 @@ var JNode = (function() {
   };
   
   /**
-   * checks if an element would match a css-selector
+   * Prüft ob ein Element auf den angegebeneen CSS-Slektor passt.
+   *
+   * @example Hinweise und weitere Informationen findest du unter JNode#match()
    * 
    * based on Sizzle
    * <http://sizzlejs.com/>
@@ -1942,8 +2116,8 @@ var JNode = (function() {
                || html.oMatchesSelector;
     
     if (!matches) {
-      return function match(expr, node) 
-      { 
+      /** @private */
+      return function match(expr, node) { 
         var reset = false;
         
         if (!node.parentNode) {
@@ -1977,7 +2151,8 @@ var JNode = (function() {
     }
     
     var pseudoRegex = /:((?:[\w\u00c0-\uFFFF\-]|\\.)+)(?:\((['"]?)((?:\([^\)]+\)|[^\(\)]*)+)\2\))?/;
-
+    
+    /** @private */
     return function match(expr, node) {
       // Make sure that attribute selectors are quoted
       expr = expr.replace(/\=\s*([^'"\]]*)\s*\]/g, "='$1']");
@@ -2014,7 +2189,10 @@ var JNode = (function() {
   })();
   
   /**
-   * wrapper/initializer function
+   * Initialisiert aus dem/den angegebenen Argumenten eine Wrapper Klasse
+   *
+   * @example Diese Funktion ist, falls JNode.noConflict() nicht verwendet wurde, global
+   * unter dem Shortcut $ erreichbar.
    *
    * @static
    * @param     {Object}                        indicator
@@ -2044,7 +2222,8 @@ var JNode = (function() {
   };
   
   /**
-   * executes a function when the browser is in idle
+   * Ruft eine Funktion auf wenn der Browser für kurze Zeit 
+   * nichts weiter zu tun hat (idle).
    *
    * @static
    * @param     {Function}    func
@@ -2060,7 +2239,8 @@ var JNode = (function() {
   };
   
   /**
-   * for each() loop
+   * Fungiert als `for each()` Funktion mit der sich 
+   * Array/Array-Like und sonstige Objekte iterieren lassen.
    *
    * @static
    * @param     {Array|Object}    object
@@ -2090,7 +2270,7 @@ var JNode = (function() {
   };
   
   /**
-   * merges objects
+   * Führt mehrere Arrays oder Objekte zusammen.
    *
    * @static
    * @param     {Object}    dest
@@ -2108,7 +2288,7 @@ var JNode = (function() {
   };
   
   /**
-   * noop-function
+   * Globale "noop"-Funktionsreferenz
    *
    * @static
    */
@@ -2123,7 +2303,8 @@ var JNode = (function() {
   window.$  = JNode.init;
   
   /**
-   * no-conflict mode
+   * Setzt die beiden Variablen $ und $$ wieder zurück, wie sie 
+   * waren bevor JNode diese überschrieben hat.
    *
    * @return  Object
    */
