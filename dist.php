@@ -1,7 +1,7 @@
 <?php
 
 /**
- * creates the dist version of JHP
+ * creates the dist version of JNode
  * 
  * just execute it and you're done
  */
