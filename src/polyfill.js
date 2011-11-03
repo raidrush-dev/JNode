@@ -1,8 +1,9 @@
+/** @private */
 (function() {
   if (typeof Function.prototype.bind == "function")
     return; // nothing to do here (javascript 1.8.6)
     
-  // private
+  /** @private */
   function polyfill(object, methods) 
   {
     for (var i in methods)
@@ -13,6 +14,7 @@
   // taken from: https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects
   
   polyfill(Object, {
+    /** @private */
     keys: function keys(o) 
     {
       if (o !== Object(o))  
@@ -24,6 +26,7 @@
   });
   
   polyfill(Array, {
+    /** @private */
     isArray: function isArray(object) 
     {
       return object instanceof Array;
@@ -31,12 +34,14 @@
   });
   
   polyfill(Array.prototype, {
+    /** @private */
     forEach: function forEach(func, context) 
     {
       for (var i = 0, l = this.length >>> 0; i < l; ++i)
         func.call(context || null, this[i], i, this);
     },
     
+    /** @private */
     indexOf: function indexOf(val) 
     {
       for (var i = 0, l = this.length >>> 0; i < l; ++i)
@@ -46,6 +51,7 @@
       return -1;
     },
     
+    /** @private */
     reduce: function reduce()
     {
       if(this === void 0 || this === null) throw new TypeError();
@@ -71,6 +77,7 @@
       return accumulator;
     },
     
+    /** @private */
     every: function every(fun)
     {
       if (this === void 0 || this === null)  
@@ -93,6 +100,7 @@
   });
   
   polyfill(Function.prototype, {
+    /** @private */
     bind: function bind(oThis)
     {
       if (typeof this !== "function") {  
@@ -102,8 +110,8 @@
     
       var fSlice = Array.prototype.slice,  
           aArgs = fSlice.call(arguments, 1),   
-          fToBind = this,   
-          fNOP = function () {},  
+          fToBind = this,
+          fNOP = function () {},
           fBound = function () {  
             return fToBind.apply(this instanceof fNOP  
                                    ? this  
