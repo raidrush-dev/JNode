@@ -13,21 +13,21 @@
  
 "use strict";
 
+//@require polyfill.js
+
 var JNode = (function() {
-  // private
-  var EL_DIV   = document.createElement('div'), 
-      EL_TABLE = document.createElement('table'),
-      EL_TBODY = document.createElement('tbody'),
-      EL_TR    = document.createElement('tr');
+  // private test div
+  var EL_DIV = document.createElement('div');
   
   // private
   var CONTAINERS = {
-    'tbody':  EL_TABLE,
-    'tfoot':  EL_TABLE,
-    'thead':  EL_TABLE,
-    'tr':     EL_TBODY,
-    'th':     EL_TR,
-    '*':      EL_DIV
+    'tbody':  'table',
+    'tfoot':  'table',
+    'thead':  'table',
+    'tr':     'tbody',
+    'th':     'tr',
+    'td':     'tr',
+    '*':      'div'
   };
 
   // private
@@ -63,6 +63,9 @@ var JNode = (function() {
   var SLICE = Array.prototype.slice;
   
   // private
+  var EMPTY_ARRAY = [];
+  
+  // private
   var ANON_ID_COUNTER = 0;
   
   // private
@@ -73,16 +76,23 @@ var JNode = (function() {
   // private
   function fragment(html) 
   {
-    var name = (html.match(/\<([\S]+)/) || [0, '*'])[1].toLowerCase();
-
+    var name = ((html = html.trim()).match(/^\<([^\s>]+)/) || [0, '*'])[1].toLowerCase();
+    
     if (!CONTAINERS[name])
       name = '*';
 
-    CONTAINERS[name].innerHTML = html;
-    var element = CONTAINERS[name].childNodes[0].cloneNode(true);
+    var parent = document.createElement(CONTAINERS[name]);
+    parent.innerHTML = html;
     
-    // reset
-    CONTAINERS[name].innerHTML = '';
+    if (parent.firstChild && parent.firstChild.nextSibling)
+      // return all created nodes incl. parent-node
+      return parent;
+      
+    // grab first child only
+    var element = parent.childNodes[0].cloneNode(true);
+    
+    // free memory
+    parent = null;
     return element;
   }
   
@@ -324,22 +334,26 @@ var JNode = (function() {
     /**
      * returns all childnodes
      *
-     * @param   Boolean       scope
+     * @param   Boolean       all
      * @return  Array<JNode>
      */
-    childs: function childs(scope) 
+    childs: function childs(all) 
     { 
-      if (scope && scope === true) {
-        var nodes = [];
-        
-        for (var i = 0, l = this.node.childNodes.length; i < l; ++i)
-          if (this.node.childNodes[i].nodeName != '#text')
-            nodes.push(new JNode(this.node.childNodes[i]));
-          
-        return new JNode.List(nodes);
-      }
+      if (all)
+        // collect all childNodes
+        return JNode.find("*", this.node) 
+          || new JNode.List(EMPTY_ARRAY) // will not break code if `null` is returned;
       
-      return JNode.find("*", this.node);
+      var nodes = [], node = this.node.firstChild;
+        
+      while (node) {
+        if (node.nodeType === 1)
+          nodes.push(new JNode(node));
+          
+        node = node.nextSibling;
+      }
+        
+      return new JNode.List(nodes);
     },
     
     /**
@@ -350,7 +364,8 @@ var JNode = (function() {
      */
     first: function first(selector) 
     {
-      return JNode.find(selector || '*', this.node, true);
+      return JNode.find(selector || '*', this.node, true) 
+        || new JNode.List(EMPTY_ARRAY); // will not break code if `null` is returned
     },
     
     /**
@@ -427,7 +442,7 @@ var JNode = (function() {
      * @return  mixed
      */
     next: function next(selector) {      
-      var nodes  = this.parent().childs(true),
+      var nodes  = this.parent().childs(),
           length = nodes.length;
       
       // skip all nodes before this node
@@ -467,35 +482,13 @@ var JNode = (function() {
         data = data.node;
       // create element(s)
       else if (!(data instanceof Node) && !Array.isArray(data))
-        return this._insertString(data, pos);
-      
-      // grab method
-      var mth = INSERTION[pos] || INSERTION['bottom'];
-      
-      if (!Array.isArray(data)) {
-        // must be an element
-        mth(this.node, data);
-        return this;
-      }
-      
-      if (pos === 'top' || pos === 'after') 
-        data.reverse();
-      
-      //for each(var node in data)
-      for (var i = 0, l = data.length; i < l; ++i) { 
-        var node = data[i];
+        return this.insertText(data, pos);
         
-        if (node instanceof JNode)
-          node = node.node;
-          
-        mth(this.node, node);
-      }
-      
-      return this;    
+      return this.insertNode(data, pos);    
     },
     
-    // private
-    _insertString: function(string)
+    // polyfill for insertAdjacentHTML
+    insertText: function(content, pos) 
     {
       var div = EL_DIV, mth;
         
@@ -505,7 +498,7 @@ var JNode = (function() {
         mth = INSERTION.tags[this.node.nodeName.toUpperCase()];
      
       if (!!mth) {
-        div.innerHTML = '&nbsp;' + t[0] + html + t[1];
+        div.innerHTML = '&nbsp;' + t[0] + content + t[1];
         div.removeChild(div.firstChild);
         
         for (var i = t[2]; i--; )
@@ -519,10 +512,37 @@ var JNode = (function() {
       EL_DIV.innerHTML = '';
       
       // save childs
-      data = SLICE.call(div.childNodes, 0);
+      var nodes = SLICE.call(div.childNodes, 0);
       
-      // insert
-      return this.insert(data);
+      return this.insertNode(nodes, pos);
+    },
+    
+    // polyfill for insertAdjacentElement
+    insertNode: function(content, pos) 
+    {
+      // grab method
+      var mth = INSERTION[pos] || INSERTION['bottom'];
+      
+      if (!Array.isArray(content)) {
+        // must be an element
+        mth(this.node, content);
+        return this;
+      }
+      
+      if (pos === 'top' || pos === 'after') 
+        content.reverse();
+      
+      //for each(var node in data)
+      for (var i = 0, l = content.length; i < l; ++i) { 
+        var node = content[i];
+        
+        if (node instanceof JNode)
+          node = node.node;
+          
+        mth(this.node, node);
+      }
+      
+      return this;
     },
     
     /**
@@ -534,7 +554,7 @@ var JNode = (function() {
     update: function update(content)
     { 
       // purge all childs
-      var childs = this.childs();
+      var childs = this.childs(true);
       if (childs) childs.invoke('purge');
       
       if (content instanceof JNode)
@@ -650,7 +670,7 @@ var JNode = (function() {
         delete JNode.Storage[this.node._jnode_uid];
       
       if (this.node !== document) {
-        var childs = this.childs();
+        var childs = this.childs(true);
         if (childs) childs.invoke('purge');
       }
       
@@ -658,31 +678,47 @@ var JNode = (function() {
     }
   };
   
-  if (typeof EL_DIV.insertAdjacentHTML === "function") {
-    // supported in all browsers except firefox < 8
-    JNode.prototype._insertString = function _insertString(content, pos) 
-    { 
-      switch (pos) {
+  (function() {
+    // private
+    function convertPosition(pos) 
+    {
+      switch ((pos || 'bottom').toLowerCase()) {
         case 'before':
-          pos = 'beforebegin';
-          break;
+          // equals: node.parentNode.insertBefore(..., node);
+          return 'beforebegin';
           
         case 'top':
-          pos = 'afterbegin';
-          break;
+          // equals: node.insertBefore(..., node.firstChild)
+          return 'afterbegin';
           
         case 'after':
-          pos = 'afterend';
-          break;
+          // equals: node.parentNode.insertBefore(..., node.nextSibling)
+          return 'afterend';
           
         default:
-          pos = 'beforeend';
+          // equals: node.appendChild(...)
+          return 'beforeend';
       }
-      
-      this.node.insertAdjacentHTML(pos, content);
-      return this;
-    };
-  }
+    }
+    
+    if (typeof EL_DIV.insertAdjacentHTML === "function") {
+      // supported in all browsers except firefox < 8
+      JNode.prototype.insertText = function insertText(content, pos) 
+      {
+        this.node.insertAdjacentHTML(convertPosition(pos), content);
+        return this;
+      };
+    }
+    
+    if (typeof EL_DIV.insertAdjacentElement == "function") {
+      // supported in MSIE/webkit-based browsers
+      JNode.prototype.insertNode = function insertNode(content, pos) 
+      {
+        this.node.insertAdjacentElement(convertPosition(pos). content);
+        return this;
+      };
+    }
+  })();
   
   if (typeof EL_DIV.dataset === "undefined") {
     // MSIE 9 does not support .dataset, but data-xyz attributes
@@ -712,7 +748,8 @@ var JNode = (function() {
         remove:   function(name) { node.className = ts(node.className).replace(new RegExp("\\b" + name + "\\b", "g"), ''); cl(); },
         contains: function(name) { return ts(node.className).match(new RegExp("\\b" + name + "\\b")) != null; },
         item:     function(index) { return (ts(node.className).split(" ") || [])[index]; },
-        toggle:   function(a, b) { if (this.contains(a)) { this.remove(a); this.add(b); } else { this.remove(b); this.add(a); } cl(); }
+        toggle:   function(name) { this[this.contains(name) ? 'remove' : 'add'](name); cl(); },
+        toString: function() { return ts(this.node.className); }
       };
       
       cl();
@@ -1790,7 +1827,7 @@ var JNode = (function() {
     if (first)
       return match ? new JNode(match) : null;
     
-    if (!match.length)
+    if (!match.length) 
       return null;
     
     for (var i = 0, l = match.length; i < l; ++i)
@@ -1964,6 +2001,23 @@ var JNode = (function() {
   };
   
   /**
+   * merges objects
+   *
+   * @param   Object    dest
+   * @param   Object    source ...
+   * @return  Object
+   */
+  JNode.merge = function merge(dest)
+  {
+    SLICE.call(arguments, 1).forEach(function(source) { 
+      for (var i = 0, keys = Object.keys(source), k, l = keys.length; i < l; ++i)
+        dest[k = keys[i]] = source[k];
+    });
+    
+    return dest;
+  };
+  
+  /**
    * noop-function
    *
    * @void
@@ -1998,127 +2052,5 @@ var JNode = (function() {
   // expose
   
   return JNode;
-})();
-
-// polyfill for MobileWebkit
-(function() {
-  if (typeof Function.prototype.bind == "function")
-    return; // nothing to do here (javascript 1.8.6)
-    
-  // private
-  function polyfill(object, methods) 
-  {
-    for (var i in methods)
-      if ((i in methods) && typeof object[i] === "undefined")
-        object[i] = methods[i];
-  }
-  
-  // taken from: https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects
-  
-  polyfill(Object, {
-    keys: function keys(o) 
-    {
-      if (o !== Object(o))  
-        throw new TypeError('Object.keys called on non-object');  
-      var ret=[],p;  
-      for(p in o) if(Object.prototype.hasOwnProperty.call(o,p)) ret.push(p);  
-      return ret;  
-    }
-  });
-  
-  polyfill(Array, {
-    isArray: function isArray(object) 
-    {
-      return object instanceof Array;
-    }
-  });
-  
-  polyfill(Array.prototype, {
-    forEach: function forEach(func, context) 
-    {
-      for (var i = 0, l = this.length >>> 0; i < l; ++i)
-        func.call(context || null, this[i], i, this);
-    },
-    
-    indexOf: function indexOf(val) 
-    {
-      for (var i = 0, l = this.length >>> 0; i < l; ++i)
-        if (val === this[i])
-          return i;
-          
-      return -1;
-    },
-    
-    reduce: function reduce()
-    {
-      if(this === void 0 || this === null) throw new TypeError();
-      var t = Object(this), len = t.length >>> 0, k = 0, accumulator;
-      if(typeof fun != 'function') throw new TypeError();
-      if(len == 0 && arguments.length == 1) throw new TypeError();
-
-      if(arguments.length >= 2)
-       accumulator = arguments[1];
-      else
-        do{
-          if(k in t){
-            accumulator = t[k++];
-            break;
-          }
-          if(++k >= len) throw new TypeError();
-        } while (true);
-
-      while (k < len){
-        if(k in t) accumulator = fun.call(undefined, accumulator, t[k], k, t);
-        k++;
-      }
-      return accumulator;
-    },
-    
-    every: function every(fun)
-    {
-      if (this === void 0 || this === null)  
-        throw new TypeError();  
-    
-      var t = Object(this);  
-      var len = t.length >>> 0;  
-      if (typeof fun !== "function")  
-        throw new TypeError();  
-    
-      var thisp = arguments[1];  
-      for (var i = 0; i < len; i++)  
-      {  
-        if (i in t && !fun.call(thisp, t[i], i, t))  
-          return false;  
-      }  
-    
-      return true;  
-    }
-  });
-  
-  polyfill(Function.prototype, {
-    bind: function bind(oThis)
-    {
-      if (typeof this !== "function") {  
-        // closest thing possible to the ECMAScript 5 internal IsCallable function  
-        throw new TypeError("Function.prototype.bind - what is trying to be bound is not callable");  
-      }  
-    
-      var fSlice = Array.prototype.slice,  
-          aArgs = fSlice.call(arguments, 1),   
-          fToBind = this,   
-          fNOP = function () {},  
-          fBound = function () {  
-            return fToBind.apply(this instanceof fNOP  
-                                   ? this  
-                                   : oThis || window,  
-                                 aArgs.concat(fSlice.call(arguments)));  
-          };  
-    
-      fNOP.prototype = this.prototype;  
-      fBound.prototype = new fNOP();  
-    
-      return fBound;  
-    }
-  });
 })();
 
