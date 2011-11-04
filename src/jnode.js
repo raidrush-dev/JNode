@@ -1723,7 +1723,6 @@ var JNode = (function() {
       
       this.options.onFailure(res);
     } 
-    }
   };
   
   /**
