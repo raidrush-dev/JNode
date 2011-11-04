@@ -6,52 +6,64 @@
  * just execute it and you're done
  */
  
-print 'Erstelle jnode.js in /dist ... ';
+print "\nErstelle jnode.js in /dist ... ";
 
 $dist = fopen(__DIR__ . '/dist/jnode.js', 'w');
 build($dist, 'jnode.js');
 fclose($dist);
 
-print PHP_EOL . PHP_EOL . 'fertig.' . PHP_EOL . PHP_EOL;
-print 'Minimiere Code in /dist/jnode.min.js ... ';
+print "\n\njnode.js wurde erfolgreich erstellt!\n\n---\n\nVerarbeite weitere Module ...\n\n";
 
 // edit path
 $yui = 'D:/Coding/YUI Compressor/build/yuicompressor-2.4.6.jar';
-
-if (file_exists($yui)) {
-  $cmd = 'java -jar "' . $yui . '" -o "' . __DIR__ 
-    . '/dist/jnode.min.js" "' . __DIR__ . '/dist/jnode.js"';
-
-  `$cmd >> nul`;
-  print 'fertig.' . PHP_EOL;
-} else {
-  print 'YUI-Compressor nicht gefunden, überspringe ...' . PHP_EOL;
-}
-
-print 'Erstelle JSDoc in /doc ... ';
+apply_yui($yui);
 
 // edit path
 $jdoc = 'D:/Coding/jsdoc-toolkit';
+apply_jdoc($jdoc);
 
-if (file_exists($jdoc)) {
-  $cmd = 'java -jar "' . $jdoc . '/jsrun.jar"  "' . $jdoc . '/app/run.js" -a -d="' 
-    . __DIR__ . '/doc" -t="' . $jdoc . '/templates/jsdoc" "' . __DIR__ . '/dist/jnode.js"';
+// ------------------------------
+
+function apply_jdoc($path) {
+  print "Pruefe auf JSDoc im angegebenen Pfad:\n{$path}/jsrunner.jar ... \n\n";
+  
+  if (!file_exists($path . '/jsrun.jar')) {
+    print "-> Modul nicht gefunden!\n\n";
+    return;
+  }
+  
+  print '-> Erstelle Dokumenation in ' . __DIR__ . "/doc\n";
+  
+  $cmd = 'java -jar "' . $path . '/jsrun.jar"  "' . $path . '/app/run.js" -a -d="' 
+    . __DIR__ . '/doc" -t="' . $path . '/templates/jsdoc" "' . __DIR__ . '/dist/jnode.js"';
     
   `$cmd >> nul`;
   
-  print 'fertig. ' . PHP_EOL;
-} else {
-  print 'JSDoc nicht gefunden, überspringe ... ' . PHP_EOL;
+  print "-> Dokumenation wurde erfolgreich erstellt!\n\n";
 }
 
-print PHP_EOL . 'viel spass!' . PHP_EOL;
-
-// ------------------------------
+function apply_yui($path) {
+  print "Pruefe auf YUI-Compressor im angegebenen Pfad:\n{$path} ... \n\n";
+  
+  if (!file_exists($path)) {
+    print "-> Modul nicht gefunden!\n\n";
+    return;
+  }
+  
+  print '-> Minimiere Code nach ' . __DIR__ . "/dist/jnode.min.js\n";
+  
+  $cmd = 'java -jar "' . $path . '" -o "' . __DIR__ 
+    . '/dist/jnode.min.js" "' . __DIR__ . '/dist/jnode.js"';
+    
+  `$cmd >> nul`;
+  
+  print "-> Code wurde erfolgreich minimiert!\n\n";
+}
 
 function build($dist, $file) {   
   $file = __DIR__ . '/src/' . $file;
   
-  print PHP_EOL . PHP_EOL . 'Verarbeite: ' . $file;
+  print "\n\nVerarbeite: {$file}";
   
   if (!file_exists($file))
     return;
@@ -67,7 +79,7 @@ function build($dist, $file) {
         
       switch ($split[0]) {
         case 'require':
-          print PHP_EOL . '-> @require (' . $split[1] . ')';
+          print "\n-> @require ({$split[1]})";
           $line = build($dist, $split[1]);
           break;
       }
