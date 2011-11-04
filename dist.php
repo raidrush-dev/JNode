@@ -40,6 +40,8 @@ if (file_exists($jdoc)) {
   `$cmd >> nul`;
   
   print 'fertig. ' . PHP_EOL;
+} else {
+  print 'JSDoc nicht gefunden, überspringe ... ' . PHP_EOL;
 }
 
 print PHP_EOL . 'viel spass!' . PHP_EOL;
