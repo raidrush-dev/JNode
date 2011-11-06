@@ -1,11 +1,39 @@
 /*!
- * JNode: lightweight javascript/dom framework for modern browsers.
+ * JNode: Leichtgewicht JavaScript/DOM Framework für moderne Browser - Version 0.0.1a2
+ * Copyright 2011 murdoc <murdoc@raidrush.org>
  *
- * supported browsers:
- * - Firefox 3.6+ / Seamonkey 2 / Fennec       | [X] tested (Firefox 3.6 / Seamonkey 2.0 without transitions, Fennec needs testing)
- * - Chrome / Safari 5.0+ / MobileWebkit       | [X] tested
- * - Opera 10.5+                               | [X] tested (without XMLHttpRequest 2. transitions may have bugs [Opera related])
- * - MSIE 9+                                   | [X] tested (without XMLHttpRequest 2, FileAPI and transitions/animations [maybe available in MSIE 10?])
+ * This library is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation, either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library. If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
+/**
+ * Unterstützte Browser:
+ *
+ * - Firefox 3.6+ / Seamonkey 2 / Fennec
+ * -- Firefox 3.6 / Seamonkey 2.0 ohne CSS3-Transitions
+ * -- Fennec muss noch gestestet werden
+ *
+ * - Chrome / Safari 5.0+ / MobileWebkit
+ * -- MobileWebkit unter Android 2.3 scheint Probleme mit Transforms zu haben
+ *
+ * - Opera 10.5+
+ * -- Ohne XMLHttpRequest Level 2. 
+ * -- CSS3-Transitions sind u.U. Fehlerhaft
+ *
+ * - MSIE 9+
+ * -- Ohne XMLHttpRequest Level 2
+ * -- Ohne FileAPI 
+ * -- Ohne CSS-Transitions/Animations
  */
  
 "use strict";
@@ -20,8 +48,6 @@
  * @param       {Object}    attr
  * @constructor
  *
- * @version   0.0.1a2
- * @author    murdoc    <murdoc@raidrush.org>
  */
 var JNode = (function() {
   /** @private */

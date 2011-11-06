@@ -1,3 +1,8 @@
+/*!
+ * Die hier verwendeten Funktionen ("Polyfills") wurden überwiegend übernommen von:
+ * https://developer.mozilla.org/en/JavaScript/Reference/
+ */
+ 
 /** @private */
 (function() {
   if (typeof Function.prototype.bind == "function")
@@ -10,8 +15,6 @@
       if ((i in methods) && typeof object[i] === "undefined")
         object[i] = methods[i];
   }
-  
-  // taken from: https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects
   
   polyfill(Object, {
     /** @private */
