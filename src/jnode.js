@@ -145,6 +145,80 @@ var JNode = (function() {
     },
     
     /**
+     * Entfernt eine Klasse
+     *
+     * @param     {String|RegExp}   name
+     * @returns   {JNode}
+     */
+    removeClass: function removeClass(name)
+    {
+      if (name instanceof RegExp) {
+        var klass = [];
+        
+        JNode.each(String(this.prop('className')).split(" "), 
+          function(c) {
+            if (!c.match(name))
+              klass.push(c);
+          }
+        );        
+        
+        this.prop('className', klass.join(" "));        
+        return this;
+      }
+      
+      this.classList.remove(name);
+      return this;
+    },
+    
+    /**
+     * Fügt eine Klasse hinzu
+     *
+     * @param     {String}          name
+     * @returns   {JNode}
+     */
+    addClass: function addClass(name)
+    {
+      this.classList.add(name);
+      return this;
+    },
+    
+    /**
+     * Überschreibt alle Klassen mit der Angegebenen
+     *
+     * @param     {String}          name
+     * @returns   {JNode}
+     */
+    setClass: function setClass(name) 
+    {
+      this.prop('className', name);
+      return this;
+    },
+    
+    /**
+     * Prüft ob das akuelle Element eine bestimmte Klasse besitzt.
+     *
+     * @param     {String}          name
+     * @returns   {Boolean}
+     */
+    hasClass: function hasClass(name)
+    {
+      return this.classList.contains(name);
+    },
+    
+    /**
+     * Fügt eine Klasse hinzu, falls diese nicht bereits exisitiert.
+     * Andernfalls wird diese entfernt.
+     *
+     * @param     {String}          name
+     * @returns   {JNode}
+     */
+    toggleClass: function toggleClass(name)
+    {
+      this.classList.toggle(name);
+      return this;
+    },
+    
+    /**
      * Ruft eine Methode der Klasse JNode auf, 
      * wenn der Browser für kurze Zeit nichts weiter zu tun hat (idle).
      * 
@@ -935,22 +1009,21 @@ var JNode = (function() {
       function cl() { self.classList.length = ts(node.className).split(" ").length; }
       
       this.classList = {
-        length:   0,
         /** @private */
-        add:      function(name) { node.className += " " + name; cl(); },
+        add:      function(name) { node.className += " " + name; },
         /** @private */
-        remove:   function(name) { node.className = ts(node.className).replace(new RegExp("\\b" + name + "\\b", "g"), ''); cl(); },
+        remove:   function(name) { node.className = ts(node.className).replace(new RegExp("\\b" + name + "\\b", "g"), ''); },
         /** @private */
         contains: function(name) { return ts(node.className).match(new RegExp("\\b" + name + "\\b")) != null; },
         /** @private */
         item:     function(index) { return (ts(node.className).split(" ") || [])[index]; },
         /** @private */
-        toggle:   function(name) { this[this.contains(name) ? 'remove' : 'add'](name); cl(); },
+        toggle:   function(name) { this[this.contains(name) ? 'remove' : 'add'](name); },
         /** @private */
         toString: function() { return ts(this.node.className); }
       };
       
-      cl();
+      Object.defineProperty(this.classList, 'length', { get: cl });
     };
   }
   
@@ -1655,7 +1728,7 @@ var JNode = (function() {
             this.transport.upload.addEventListener('load', this.options.onUpload);
           } catch (e) {
             // XMLHttpRequest Level 2
-            // not supported in opera
+            // not supported in Opera and MSIE
           }
         } else if (typeof data !== "string") {
           data = [];
