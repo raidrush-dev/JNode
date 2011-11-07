@@ -16,26 +16,6 @@
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
  
-/**
- * Unterstützte Browser:
- *
- * - Firefox 3.6+ / Seamonkey 2 / Fennec
- * -- Firefox 3.6 / Seamonkey 2.0 ohne CSS3-Transitions
- * -- Fennec muss noch gestestet werden
- *
- * - Chrome / Safari 5.0+ / MobileWebkit
- * -- MobileWebkit unter Android 2.3 scheint Probleme mit Transforms zu haben
- *
- * - Opera 10.5+
- * -- Ohne XMLHttpRequest Level 2. 
- * -- CSS3-Transitions sind u.U. Fehlerhaft
- *
- * - MSIE 9+
- * -- Ohne XMLHttpRequest Level 2
- * -- Ohne FileAPI 
- * -- Ohne CSS-Transitions/Animations
- */
- 
 "use strict";
 
 //@require polyfill.js
