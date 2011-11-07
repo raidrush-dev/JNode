@@ -367,6 +367,50 @@ var JNode = (function() {
         return this.style("display", "");
         
       return this;
+    }, 
+    
+    // TODO: doku
+    dim: function dim() 
+    {
+      var props = [this.prop('offsetWidth'), this.prop('offsetHeight')];
+      
+      if (this.style("display") === "none") {
+        var orig = {
+          visibility: this.style("visibility"),
+          position:   this.style("position")
+        };
+        
+        var tmp = new JNode(this.node.nodeName),
+            dsp = tmp.style("display");
+            
+        tmp = null;
+        var styles = "visibility:hidden;display:" + dsp;
+        
+        if (["absolute", "fixed"].indexOf(orig.position) == -1)
+          styles += ";position:absolute";
+          
+        this.style(styles);
+        props = [this.prop('offsetWidth'), this.prop('offsetHeight')];
+        
+        this.style(orig);
+      }
+      
+      return JNode.merge(props, {
+        width:  props[0],
+        height: props[1]
+      });
+    },
+    
+    // TODO: doku
+    width: function width()
+    {
+      return this.dim().width;
+    },
+    
+    // TODO: doku
+    height: function height()
+    {
+      return this.dim().height;
     },
     
     /**
@@ -415,7 +459,7 @@ var JNode = (function() {
     select: function select(selector) 
     {
       return JNode.find(selector, this.node)
-        || new JNode.list([]); // will not break code if `null` is returned;
+        || new JNode.List([]); // will not break code if `null` is returned;
     },
     
     /**
@@ -666,6 +710,24 @@ var JNode = (function() {
         if (nodes[i].match(selector))
           return nodes[i];
           
+      return null;
+    },
+    
+    // TODO: doku
+    find: function find(selector)
+    {
+      if (!selector)
+        return this;
+        
+      var node = this.node;
+      
+      while (node) {
+        if (JNode.match(selector, node))
+          return $(node);
+          
+        node = node.parentNode;
+      }
+      
       return null;
     },
     
@@ -2165,7 +2227,7 @@ var JNode = (function() {
       return match ? new JNode(match) : null;
     
     if (!match.length) 
-      return null;
+      return new JNode.List([]);
     
     for (var i = 0, l = match.length; i < l; ++i)
       nodes.push(new JNode(match[i]));
