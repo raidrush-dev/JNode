@@ -717,7 +717,7 @@ var JNode = (function() {
       
       while (node) {
         if (JNode.match(selector, node))
-          return $(node);
+          return new JNode(node);
           
         node = node.parentNode;
       }
@@ -1024,7 +1024,7 @@ var JNode = (function() {
       /** @private */
       JNode.prototype.insertNode = function insertNode(content, pos) 
       {
-        this.node.insertAdjacentElement(convertPosition(pos). content);
+        this.node.insertAdjacentElement(convertPosition(pos), content);
         return this;
       };
     }
@@ -2163,6 +2163,9 @@ var JNode = (function() {
   var RX_EL_ID   = /^(\w+)?#([\w:]+)$/,
       RX_EL_NAME = /^[a-zA-Z]+$/;
   
+  /** @private */
+  var EMPTY_JNODE_LIST = new JNode.List(EMPTY_ARRAY);
+  
   /**
    * Findet alle Elemente, die auf den angegebenen CSS-Selektor passen.
    *
@@ -2221,7 +2224,7 @@ var JNode = (function() {
       return match ? new JNode(match) : null;
     
     if (!match.length) 
-      return new JNode.List(EMPTY_ARRAY);
+      return EMPTY_JNODE_LIST;
     
     for (var i = 0, l = match.length; i < l; ++i)
       nodes.push(new JNode(match[i]));
@@ -2385,6 +2388,11 @@ var JNode = (function() {
   {
     context && (func = func.bind(context));
     
+    // JavaScript 1.8.6 
+    // function.length != Array-like
+    if (typeof object === "function")
+      throw new TypeError;
+    
     if (Array.isArray(object) || object.length != void 0) {
       for (var i = 0, l = object.length; i < l; ++i)
         if (false === func(object[i], i, object))
@@ -2404,15 +2412,17 @@ var JNode = (function() {
    * Führt mehrere Arrays oder Objekte zusammen.
    *
    * @static
-   * @param     {Object}    dest
    * @param     {Object}    ...
    * @returns   {Object}
    */
-  JNode.merge = function merge(dest)
+  JNode.merge = function merge()
   {
-    SLICE.call(arguments, 1).forEach(function(source) { 
-      for (var i = 0, keys = Object.keys(source), k, l = keys.length; i < l; ++i)
-        dest[k = keys[i]] = source[k];
+    var dest = [];
+    
+    SLICE.call(arguments).forEach(function(source) { 
+      JNode.each(source, function(v, k) {
+        dest[k] = source[k];
+      });
     });
     
     return dest;
@@ -2453,6 +2463,5 @@ var JNode = (function() {
   // ----------------------------------------------
   // expose
   
-  /** @exports */
   return JNode;
 })();
