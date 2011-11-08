@@ -103,38 +103,38 @@ var JNode = (function() {
     parent.innerHTML = html;
     
     if (parent.firstChild && parent.firstChild.nextSibling)
-      // return all created nodes incl. parent-node
+      // alle elemente zurückgeben inkl. eltern-element
       return parent;
       
-    // grab first child only
+    // nur die generierten elemente (firstChild) zurückgeben
     var element = parent.childNodes[0].cloneNode(true);
     
-    // free memory
+    // speicher freigeben
     parent = null;
     return element;
   }
   
   // ----------------------------------------------
+  // TODO: Node <> Element
   
   /** @private */
   function JNode(tag, attr) 
   {   
-    // set constructor
     this.constructor = JNode;
     
-    // constructor code
-    this.node = (tag.nodeName || tag === document) // tag is already a node
+    // node erstellen
+    this.node = (tag instanceof Node || tag === document) // tag ist bereits ein element
       ? tag : (tag instanceof JNode) // jnode-object
-        ? tag.node : (tag.substr(0, 1) !== '<') // tag or html
+        ? tag.node : (tag.substr(0, 1) !== '<') // tag oder html
           ? document.createElement(tag) : fragment(tag);
     
-    // allow hooks
+    // hooks ausführen
     if (this.hook) this.hook();
     
-    // classlist polyfill
+    // HTML5 classList polyfill
     this._classList();
     
-    // set attributes if available
+    // attribute setzen
     if (attr) this.attr(attr);
   }
 
@@ -458,8 +458,7 @@ var JNode = (function() {
      */
     select: function select(selector) 
     {
-      return JNode.find(selector, this.node)
-        || new JNode.List([]); // will not break code if `null` is returned;
+      return JNode.find(selector, this.node);
     },
     
     /**
@@ -525,12 +524,11 @@ var JNode = (function() {
      */
     wrap: function wrap(wrapper)
     {
-      // TODO: use INSERTIONS
+      // TODO: INSERTIONS
       
       if (!(wrapper instanceof JNode))
         wrapper = new JNode(wrapper);
       
-      // use real DOM-methods instead of JNode wrapper methods
       if (this.node.parentNode) 
         this.node.parentNode.replaceChild(wrapper.node, this.node);
         
@@ -560,9 +558,7 @@ var JNode = (function() {
     childs: function childs(all) 
     { 
       if (all)
-        // collect all childNodes
-        return JNode.find("*", this.node) 
-          || new JNode.List(EMPTY_ARRAY) // will not break code if `null` is returned;
+        return JNode.find("*", this.node);
       
       var nodes = [], node = this.node.firstChild;
         
@@ -624,8 +620,7 @@ var JNode = (function() {
      */
     parent: function parent()
     {
-      return this.node.parentNode 
-        ? new JNode(this.node.parentNode) : this;
+      return this.node.parentNode ? new JNode(this.node.parentNode) : this;
     },
     
     /**
@@ -692,7 +687,6 @@ var JNode = (function() {
       var nodes  = this.parent().childs(),
           length = nodes.length;
       
-      // skip all nodes before this node
       for (var i = 0; i < length; ++i) {
         if (nodes[i].node === this.node) {
           ++i;
@@ -778,10 +772,8 @@ var JNode = (function() {
       /** @default "bottom" */
       pos = (pos || 'bottom').toLowerCase();
       
-      // grab JNode.node
       if (data instanceof JNode)
         data = data.node;
-      // create element(s)
       else if (!(data instanceof Node) && !Array.isArray(data))
         return this.insertText(data, pos);
         
@@ -809,23 +801,18 @@ var JNode = (function() {
         div.innerHTML = data;
       }
       
-      // free memory
       EL_DIV.innerHTML = '';
       
-      // save childs
       var nodes = SLICE.call(div.childNodes, 0);
-      
       return this.insertNode(nodes, pos);
     },
     
     /** @private */
     insertNode: function(content, pos) 
     {
-      // grab method
       var mth = INSERTION[pos] || INSERTION['bottom'];
       
       if (!Array.isArray(content)) {
-        // must be an element
         mth(this.node, content);
         return this;
       }
@@ -863,7 +850,6 @@ var JNode = (function() {
      */
     update: function update(content)
     { 
-      // purge all childs
       this.childs(true).invoke('purge');
       
       if (content instanceof JNode)
@@ -934,7 +920,6 @@ var JNode = (function() {
       var uid;
       
       if (!this.node._jnode_uid) {
-        // use JNode.getStorage() for `window` (uid = 0)
         if (this.node === document)
           uid = 1;
         else {
@@ -1013,25 +998,20 @@ var JNode = (function() {
     {
       switch ((pos || 'bottom').toLowerCase()) {
         case 'before':
-          // equals: node.parentNode.insertBefore(..., node);
           return 'beforebegin';
           
         case 'top':
-          // equals: node.insertBefore(..., node.firstChild)
           return 'afterbegin';
           
         case 'after':
-          // equals: node.parentNode.insertBefore(..., node.nextSibling)
           return 'afterend';
           
         default:
-          // equals: node.appendChild(...)
           return 'beforeend';
       }
     }
     
     if (typeof EL_DIV.insertAdjacentHTML === "function") {
-      // supported in all browsers except firefox < 8
       /** @private */
       JNode.prototype.insertText = function insertText(content, pos) 
       {
@@ -1041,7 +1021,6 @@ var JNode = (function() {
     }
     
     if (typeof EL_DIV.insertAdjacentElement == "function") {
-      // supported in MSIE/webkit-based browsers
       /** @private */
       JNode.prototype.insertNode = function insertNode(content, pos) 
       {
@@ -1052,7 +1031,7 @@ var JNode = (function() {
   })();
   
   if (typeof EL_DIV.dataset === "undefined") {
-    // MSIE 9 does not support .dataset, but data-xyz attributes
+    // MSIE 9 untersützt .dataset nicht, aber "data-xyz"-attribute
     JNode.prototype.data = function data(needle, value) 
     {
       if (arguments.length === 2) {
@@ -1073,9 +1052,6 @@ var JNode = (function() {
       /** @private */
       function ts(c) { return c ? c.toString() : ""; }
       
-      /** @private */
-      function cl() { self.classList.length = ts(node.className).split(" ").length; }
-      
       this.classList = {
         /** @private */
         add:      function(name) { node.className += " " + name; },
@@ -1091,7 +1067,10 @@ var JNode = (function() {
         toString: function() { return ts(this.node.className); }
       };
       
-      Object.defineProperty(this.classList, 'length', { get: cl });
+      Object.defineProperty(this.classList, 'length', { 
+        /** @private */
+        get: function() { return ts(node.className).split(" ").length; }
+      });
     };
   }
   
@@ -1107,7 +1086,6 @@ var JNode = (function() {
    */
   JNode.List = function JList(nodes)
   {
-    // set constructor
     this.constructor = JList;
     
     for (var i = 0, l = nodes.length; i < l; ++i)
@@ -1119,7 +1097,7 @@ var JNode = (function() {
   // prototype
   JNode.List.prototype = {
     /**
-     * adds a node
+     * Speichert alle Nodes in dieser Instanz als Array-like Eigenschaften
      *
      * @param     {Number}    index
      * @param     {Element}   node
@@ -1130,7 +1108,7 @@ var JNode = (function() {
     },
     
     /**
-     * calls a method on all nodes
+     * Ruft eine Methode aller Elemente auf
      *
      * @param     {String}      method
      * @param     {Object}      ...
@@ -1148,7 +1126,7 @@ var JNode = (function() {
     },
     
     /**
-     * collects properties from all nodes
+     * Sammelt eine bestimmte Eigenschaft aller Elemente
      *
      * @param     {String}          prop
      * @returns   {Array[String]}
@@ -1164,8 +1142,9 @@ var JNode = (function() {
     },
     
     /**
-     * alias for JNode.each
+     * alias für JNode.each
      *
+     * @see       JNode.each
      * @param     {Function}      func
      * @param     {Object}        context
      * @returns   {JNode.List}
@@ -1177,7 +1156,7 @@ var JNode = (function() {
     },
     
     /**
-     * filters elements
+     * Filtert Elemente anhand eines Callbacks
      *
      * @param     {Function}    func
      * @param     {Object}      context
@@ -1282,64 +1261,72 @@ var JNode = (function() {
     }
     
     /** @private */
-    function createResponder(element, eventName, handler)
+    function createResponder(element, eventName, handler, once)
     {
-      // handle mouseenter/leave
-      if (!MOUSEENTER_LEAVE && ["mouseenter", "mouseleave"].indexOf(eventName) > -1) {
-        return function(event) {
-          var parent = event.relatedTarget;
-          
-          while (parent && parent !== element) {
-            try { 
-              parent = parent.parentNode; 
-            } catch(e) {
-              return;
+      var responder = (function() {
+        if (!MOUSEENTER_LEAVE && ["mouseenter", "mouseleave"].indexOf(eventName) > -1) {
+          return function(event) {
+            var parent = event.relatedTarget;
+            
+            while (parent && parent !== element) {
+              try { 
+                parent = parent.parentNode; 
+              } catch(e) {
+                return;
+              }
             }
-          }
-          
-          if (parent === element)
+            
+            if (parent === element)
+              return;
+              
+            handler.call(element, event || window.event);
+          };
+        }
+        
+        if (eventName.indexOf(":") == -1) {
+          return function(event) { 
+            handler.call(element, event || window.event); 
+          };
+        }
+        
+        return function(event) {
+          if (!event.eventName || event.eventName != eventName)
             return;
             
           handler.call(element, event || window.event);
         };
+      })();
+      
+      if (once === true) {
+        responder = (function(responder) {
+          return function(event) {
+            JNode.release(element, eventName, handler, useCapture);
+            responder(event);
+          };
+        })(responder);
       }
       
-      // handle dom-event
-      if (eventName.indexOf(":") == -1) {
-        return function(event) { 
-          handler.call(element, event || window.event); 
-        };
-      }
-      
-      // handle custom-event
-      return function(event) {
-        if (!event.eventName || event.eventName != eventName)
-          return;
-          
-        handler.call(element, event || window.event);
-      };
+      return responder;
     }
     
     /** @private */
-    function register(element, eventName, handler, useCapture) 
+    function register(element, eventName, handler, useCapture, once) 
     {
       var registry = getRegistry(element);
       
       if (!registry[eventName])
         registry[eventName] = [];
-      else {
-        // check all handlers and don't register the same again it again
+      else
         for (var i = 0, l = registry[eventName].length; i < l; ++i)
           if (registry[eventName].handler === handler 
            && registry[eventName].useCapture === useCapture)
             return;
-      }
       
       var entry = {
         eventName:  eventName,
         handler:    handler,
-        responder:  createResponder(element, eventName, handler),
-        useCapture: useCapture      
+        responder:  createResponder(element, eventName, handler, once),
+        useCapture: useCapture
       };
       
       registry[eventName].push(entry);
@@ -1359,7 +1346,6 @@ var JNode = (function() {
         
         if (entry.handler === handler 
          && entry.useCapture === useCapture) {
-          // remove this handler
           registry[eventName].splice(i, 1);
           return entry;
         }
@@ -1435,8 +1421,9 @@ var JNode = (function() {
      * @param     {String}            eventName
      * @param     {Function}          handler
      * @param     {Boolean}           useCapture
+     * @param     {Boolean}           once
      */
-    JNode.listen = function listen(element, eventName, handler, useCapture)
+    JNode.listen = function listen(element, eventName, handler, useCapture, once)
     {
       if (element instanceof JNode)
         element = element.node;
@@ -1445,32 +1432,41 @@ var JNode = (function() {
       
       // dom:loaded | dom:ready -> DOMContentLoaded
       if (eventName === 'dom:loaded' || eventName === 'dom:ready') {
-        // this only works if you use dom: ..., 
-        // DOMContentLoaded has no special behavior
         if (JNode.loaded === true) {
-          // document is loaded. execute handler and return
           handler.call(element);
           return;
         }
         
-        // override event-name
         eventName = 'DOMContentLoaded';
       }
       
-      // register eventhandler
-      var responder = register(element, eventName, handler, useCapture).responder;
+      var responder = register(element, eventName, handler, useCapture, once).responder;
       
-      // handle DOM events
       if (eventName.indexOf(":") == -1) {
-        // mouseenter/leave
         eventName = realEventName(eventName); 
         element.addEventListener(eventName, responder, useCapture);
         return;
       }
       
-      // handle user defined events
       element.addEventListener("dataavailable", responder, useCapture);
     };
+    
+    /**
+     * Registriert einen listener für den angegebenen Event und entfernt diesen
+     * wenn der Event zum ersten mal ausgelöst wurde.
+     *
+     * @event
+     * @static
+     * @see       JNode.listen()
+     * @param     {Element|Window}    element
+     * @param     {String}            eventName
+     * @param     {Function}          handler
+     * @param     {Boolean}           useCapture
+     */
+    JNode.one = function one(element, eventName, handler, useCapture)
+    {     
+      JNode.listen(element, eventName, handler, useCapture, true);
+    };  
     
     /**
      * Entfernt einen Event-Handler
@@ -1488,28 +1484,23 @@ var JNode = (function() {
         element = element.node;
         
       if (typeof eventName == "boolean") {
-        // assume that `eventName` is used as `useCapture`
         useCapture = eventName;
       } else if (typeof handler == "boolean") {
-        // assume that `handler` is used as `useCapture`
         useCapture = handler;
       }
       
       var length = arguments.length;
       
       if (length === 1 || (length === 2 && typeof useCapture != "undefined")) {
-        // remove all eventhandler
         releaseAll(element, useCapture);
         return;
       }
       
       if (length === 2 || (length === 3 && typeof useCapture != "undefined")) {
-        // remove all eventhandler for the given type
         releaseType(element, eventName, useCapture);
         return;
       }
       
-      // unregister eventhandler
       var responder = unregister(element, eventName, handler, useCapture);
       
       if (!responder || !responder.responder)
@@ -1517,14 +1508,12 @@ var JNode = (function() {
         
       responder = responder.responder;
       
-      // handle DOM events
       if (eventName.indexOf(":") == -1) {
         eventName = realEventName(eventName);
         element.removeEventListener(eventName, responder, useCapture);
         return;
       }
       
-      // handle user defined events
       element.removeEventListener("dataavailable", responder, useCapture);
     };
     
@@ -1566,6 +1555,19 @@ var JNode = (function() {
     };
     
     /**
+     * Entspricht JNode.one(), bezieht sich aber auf das aktuelle Element
+     *
+     * @event
+     * @see       JNode.one
+     * @returns   {JNode}
+     */
+    JNode.prototype.one = function one(eventName, handler, useCapture)
+    {
+      JNode.one(this.node, eventName, handler, useCapture);
+      return this;
+    };
+    
+    /**
      * Entspricht JNode.release(), bezieht sich aber auf das aktuelle Element
      *
      * @event
@@ -1594,7 +1596,6 @@ var JNode = (function() {
       return this;
     };
     
-    // dom:loaded / dom:ready handler
     JNode.loaded = false;
     JNode.listen(document, 'DOMContentLoaded', function() { JNode.loaded = true; });
     
@@ -1609,17 +1610,23 @@ var JNode = (function() {
      */
     JNode.Event = function JEvent(event)
     {
-      // set constructor
       this.constructor = JEvent;
       
       /**
-       * original event instance
+       * Originaler Event
        *
        * @field
        */
       this.event = event;
       
-      // allow hooks
+      /**
+       * Speichert ob der aktuelle Event gestoppt wurde
+       *
+       * @field
+       */
+      this.stopped = false;
+      
+      // hooks ausführen
       if (this.hook) this.hook();
     };
     
@@ -1660,7 +1667,6 @@ var JNode = (function() {
         this.event.preventDefault();
         this.event.stopPropagation();
         
-        // mark event as stopped
         this.stopped = true;
         return this;
       },
@@ -1696,11 +1702,10 @@ var JNode = (function() {
    */
   JNode.Request = function JRequest(url, options)
   {
-    // set constructor
     this.constructor = JRequest;
     
     /** 
-     * ajax/jsonp resource
+     * Ajax/JSONP URL
      *
      * @field 
      */
@@ -1711,23 +1716,21 @@ var JNode = (function() {
      *
      * @field 
      */
-    this.options = { 
+    this.options = JNode.merge({ 
       method:       "post",
-      data:         {},       // can be a File, FormData, Object or String
-      async:        true,     // true/false
-      jsonp:        '',       // if this is a function, JSONP will be used
+      data:         {}, 
+      async:        true,
+      jsonp:        null,
       contentType:  'application/x-www-form-urlencoded',
       encoding:     'UTF-8',
-      parseHtml:    false,    // if true, the responseText will be parsed as HTML
+      parseHtml:    false,
       
       // event-handler
       onSuccess:    JNode.noop,
       onFailure:    JNode.noop,
       onProgress:   JNode.noop,
       onUpload:     JNode.noop
-    };
-    
-    JNode.each(options, function(v, k) { this.options[k] = v; }, this);
+    }, options || {});
     
     /** 
      * AJAX Anfragemethode
@@ -1790,31 +1793,28 @@ var JNode = (function() {
           
         if ((window.FormData && data instanceof FormData)
          || (window.File && data instanceof File)) {
-          // add progress and upload listeners. 
           try {
             this.transport.upload.addEventListener('progress', this.options.onProgress);
             this.transport.upload.addEventListener('load', this.options.onUpload);
           } catch (e) {
             // XMLHttpRequest Level 2
-            // not supported in Opera and MSIE
+            // Nicht verfügbar in Opera und MSIE
+            // In Opera vermutlich in Zukunft (wieder) implementiert
           }
         } else if (typeof data !== "string") {
           data = [];
           
-          // generate key=value pairs
           JNode.each(this.options.data, function(v, k) { data.push(k + "=" + v); });
           data = data.join('&');
         }
       }
       
-      // add load/error/abort listener
       try {
         this.transport.addEventListener('load', this.loaded.bind(this));
         this.transport.addEventListener('error', this.options.onFailure);
         this.transport.addEventListener('abort', this.options.onFailure);
       } catch (e) {
-        // opera only supports "onload", "onerror", "onabort" properties.
-        // and NO, i will not use "onreadystatechange"
+        // Opera untersützt nur "onload", "onerror", "onabort"
         this.transport.onload = this.loaded.bind(this);
         this.transport.onerror = this.options.onFailure;
         this.transport.onabort = this.options.onFailure;
@@ -1967,9 +1967,7 @@ var JNode = (function() {
           continue;
         }
         
-        // check if the given style-property has a value.
-        // if not: use computed-style and set it as inline-style.
-        // see bug: https://bugzilla.mozilla.org/show_bug.cgi?id=571344
+        // https://bugzilla.mozilla.org/show_bug.cgi?id=571344
         var value = this.node.style.getPropertyValue(prop);
         
         if (value === "" || value === "auto")
@@ -2002,18 +2000,21 @@ var JNode = (function() {
       handled = true;
     }.bind(this);
     
+    // doc.one(endEvent, handler, true)
     doc.listen(endEvent, handler, true);
     JNode.defer(function() { this.style(tstyle); }.bind(this));
     
-    // force event, because no changes or to fast duration = no end-event (at least in firefox)
-    // because upcomming effects may not function without clean-up
-    // and you properly do not want to animatate ALL upcomming .style() changes after one failed effect.
+    // ausführung erzwingen, da es in manchen fällen vorkommen kann, dass
+    // der handler nicht ausgeführt wird.
+    
+    // das kann zu problemen führen, da nachfolgende änderungen an style-eigenschaften
+    // animiert bleiben.
     setTimeout(handler, (duration + 2) * 1000);
     return this;
   };
   
   if (!CSS_TRANSITION) {
-    // MSIE9 does not support transitions, but transforms
+    // MSIE9 unterstützt keine CSS3-Transitions, aber CSS3-Transforms
     JNode.prototype.anim = function anim(styles, duration, delay, ease, callback)
     {
       // unused
@@ -2056,7 +2057,6 @@ var JNode = (function() {
    */
   JNode.prototype.morph = function morph(styles, duration, delay, ease, callback)
   {
-    // the last argument can always be the callback
     switch (arguments.length) {
       case 1:
         duration = .5;
@@ -2161,8 +2161,7 @@ var JNode = (function() {
   
   /** @private */
   var RX_EL_ID   = /^(\w+)?#([\w:]+)$/,
-      RX_EL_NAME = /^[a-zA-Z]+$/,
-      RX_EL_FIX  = /^(?:body|head)$/i;
+      RX_EL_NAME = /^[a-zA-Z]+$/;
   
   /**
    * Findet alle Elemente, die auf den angegebenen CSS-Selektor passen.
@@ -2190,28 +2189,23 @@ var JNode = (function() {
     var nodes = [],
         match;
         
-    // id selector
+    // BODY
+    if (selector.toLowerCase() === 'body') {
+      match = document.body;
+      first = true;
+    }
+    // #ID
     if (selector.match(RX_EL_ID)) {
-      // we have to use `document` instead of context
       match = document.getElementById(RegExp.$2);
-      first = true; // override if necessary
+      first = true;
       
-      // check tagname if requested
       if (RegExp.$1 && match.nodeName.toUpperCase() != RegExp.$1.toUpperCase())
         match = null;
     }
-    // fixed tag selector
-    else if (selector.match(RX_EL_FIX)) {
-        // html/head/body/title
-        match = document[selector];
-        first = true; // override if necessary
-    }
-    // element-tagname selector
+    // TAGNAME
     else if (selector.match(RX_EL_NAME)) {
-      // tag-name selector
       match = context.getElementsByTagName(selector);
       
-      // first?
       if (first) 
         match = match ? match[0] : null;
     }
@@ -2220,14 +2214,14 @@ var JNode = (function() {
       match = context["querySelector" + (first ? "" : "All")](selector) || [];
       
       if (first && Array.isArray(match))
-        match = null; // fallback used
+        match = null;
     }
     
     if (first)
       return match ? new JNode(match) : null;
     
     if (!match.length) 
-      return new JNode.List([]);
+      return new JNode.List(EMPTY_ARRAY);
     
     for (var i = 0, l = match.length; i < l; ++i)
       nodes.push(new JNode(match[i]));
@@ -2389,10 +2383,8 @@ var JNode = (function() {
    */
   JNode.each = function each(object, func, context)
   {
-    // faster than func.call in iteration-body
     context && (func = func.bind(context));
     
-    // native array or array-like
     if (Array.isArray(object) || object.length != void 0) {
       for (var i = 0, l = object.length; i < l; ++i)
         if (false === func(object[i], i, object))
@@ -2401,7 +2393,6 @@ var JNode = (function() {
       return;
     }
     
-    // object
     var keys = Object.keys(object);
     
     for (var i = 0, k, l = keys.length; i < l; ++i)
