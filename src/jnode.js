@@ -2157,6 +2157,24 @@ var JNode = (function() {
   };
   
   // ----------------------------------------------
+  // query-string parser
+  
+  //@require query.js
+  
+  JNode.GET = {};
+
+  (function() {
+    var search = window.location.search.substring(1);
+    
+    if (search) {
+      var delim = search.replace(/[^;&]+/g, '').substr(0, 1);
+      JNode.GET = JNode.Query.decode(search, delim);
+    }
+  })();
+    
+  Object.freeze(JNode.GET);
+  
+  // ----------------------------------------------
   // static
   
   /** @private */
