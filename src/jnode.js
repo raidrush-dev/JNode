@@ -1,5 +1,5 @@
 /*!
- * JNode: Leichtgewicht JavaScript/DOM Framework für moderne Browser - Version 0.0.1a2
+ * JNode: Leichtgewicht JavaScript/DOM Framework für moderne Browser - Version 0.0.1a3
  * Copyright 2011 murdoc <murdoc@raidrush.org>
  *
  * This library is free software: you can redistribute it and/or
