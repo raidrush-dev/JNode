@@ -304,13 +304,14 @@
   };
   
   /**
-   * BlindDown-Effekt
+   * Blind-Effekt
    *
+   * @param     {String}                  dir
    * @param     {Number|String|Object}    options
    * @param     {Function}                callback
    * @returns   {JNode}
    */
-  JNode.prototype.blindDown = function blindDown(options, callback)
+  JNode.prototype.blind = function blind(dir, options, callback)
   {
     var height   = this.height(),
         overflow = this.style("overflow");
@@ -323,47 +324,24 @@
     if (isNumOrStr(options))
       options = { duration: options };
     
-    useDelay(options, function() {
-      this.style("overflow:hidden;height:0px;").show();
-      JNode.defer(function() {
-        this.anim("height:" + height + "px", options, function(node) {
-          node.style("overflow:" + overflow);
+    useDelay(options, ((dir && dir === "down") ? 
+      function() {
+        this.style("overflow:hidden;height:0px;").show();
+        JNode.defer(function() {
+          this.anim("height:" + height + "px", options, function(node) {
+            node.style("overflow:" + overflow);
+            callback && JNode.defer(callback, node);
+          });
+        }.bind(this));
+      } :
+      function() {
+        this.style("overflow:hidden");
+        this.anim("height:0px;", options, function(node) {
+          node.hide().style("height:" + height + "px;overflow:" + overflow);
           callback && JNode.defer(callback, node);
         });
-      }.bind(this));
-    }.bind(this));
-    
-    return this;
-  };
-  
-  /**
-   * BlindUp-Effekt
-   *
-   * @param     {Number|String|Object}    options
-   * @param     {Function}                callback
-   * @returns   {JNode}
-   */
-  JNode.prototype.blindUp = function blindUp(options, callback)
-  {
-    var height   = this.height(),
-        overflow = this.style("overflow");
-        
-    if (typeof options === "function")
-      callback = options, options = {};
-      
-    options || (options = {});
-    
-    if (isNumOrStr(options))
-      options = { duration: options };
-    
-    useDelay(options, function() {
-      this.style("overflow:hidden");
-      this.anim("height:0px;", options, function(node) {
-        node.hide().style("height:" + height + "px;overflow:" + overflow);
-        callback && JNode.defer(callback, node);
-      });
-    }.bind(this));
-    
+      }
+    ).bind(this));
     return this;
   };
   
