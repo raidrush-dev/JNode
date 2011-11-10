@@ -357,10 +357,14 @@ JNode.Query = (function(undefiend) {
      */
     serialize: function serialize(value, label)
     {      
-      switch (toString.call(value)) {
+      switch (toString.call(value)) { 
         case DATE_TYPE:
-          value = +value;
-          
+          return label + "=" + (+value);          
+        
+        case undefined:
+        case null:
+          value = "";
+        
         case STRING_TYPE:
           value = this.encode(value);
           
@@ -375,7 +379,7 @@ JNode.Query = (function(undefiend) {
           return this.access(value, label);
         
         default:
-          throw new Error('Parse error: value for key "' + label + '" is not serializeable');
+          throw new Error('Parse error: value for key "' + label + '" is not serializable');
       }
     },
     
