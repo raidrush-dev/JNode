@@ -1,5 +1,5 @@
 // standalone-version:
-// https://github.com/raidrush-dev/JQueryString
+// https://github.com/raidrush-dev/querystring-parser
 
 /**
  * @static

@@ -236,10 +236,9 @@ var JNode = (function() {
     defer: function defer() 
     {
       var args = SLICE.call(arguments, 0),
-          call = args.shift(),
-          self = this;
+          call = args.shift();
           
-      JNode.defer(function() { self[call].apply(self, args); });
+      JNode.defer(function() { this[call].apply(this, args); }.bind(this));
       return this;
     },
     
@@ -319,7 +318,9 @@ var JNode = (function() {
           .getPropertyValue(needle);
       }
       
-      var expr = "";
+      // pretty bad. all the reflows and repaintings ...
+      // but this is the only "clean" way to remove properties
+      // if `v` is empty/null
       JNode.each(needle, function(v, k) { this.style(k, v); }, this);
       return this;
     },
@@ -560,13 +561,11 @@ var JNode = (function() {
       if (all)
         return JNode.find("*", this.node);
       
-      var nodes = [], node = this.node.firstChild;
+      var nodes = [], node = this.node.firstElementChild;
         
       while (node) {
-        if (node.nodeType === 1)
-          nodes.push(new JNode(node));
-          
-        node = node.nextSibling;
+        nodes.push(new JNode(node));  
+        node = node.nextElementSibling;
       }
         
       return new JNode.List(nodes);
