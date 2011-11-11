@@ -23,12 +23,10 @@
  * https://developer.mozilla.org/en/JavaScript/Reference/
  */
  
-/** @private */
 (function() {
   if (typeof Function.prototype.bind == "function")
-    return; // nothing to do here (javascript 1.8.6)
-    
-  /** @private */
+    return;
+  
   function polyfill(object, methods) 
   {
     for (var i in methods)
@@ -37,7 +35,6 @@
   }
   
   polyfill(Object, {
-    /** @private */
     keys: function keys(o) 
     {
       if (o !== Object(o))  
@@ -49,7 +46,6 @@
   });
   
   polyfill(Array, {
-    /** @private */
     isArray: function isArray(object) 
     {
       return object instanceof Array;
@@ -57,14 +53,12 @@
   });
   
   polyfill(Array.prototype, {
-    /** @private */
     forEach: function forEach(func, context) 
     {
       for (var i = 0, l = this.length >>> 0; i < l; ++i)
         func.call(context || null, this[i], i, this);
     },
     
-    /** @private */
     indexOf: function indexOf(val) 
     {
       for (var i = 0, l = this.length >>> 0; i < l; ++i)
@@ -74,7 +68,6 @@
       return -1;
     },
     
-    /** @private */
     reduce: function reduce()
     {
       if(this === void 0 || this === null) throw new TypeError();
@@ -100,7 +93,6 @@
       return accumulator;
     },
     
-    /** @private */
     every: function every(fun)
     {
       if (this === void 0 || this === null)  
@@ -123,11 +115,9 @@
   });
   
   polyfill(Function.prototype, {
-    /** @private */
     bind: function bind(oThis)
     {
-      if (typeof this !== "function") {  
-        // closest thing possible to the ECMAScript 5 internal IsCallable function  
+      if (typeof this !== "function") {
         throw new TypeError("Function.prototype.bind - what is trying to be bound is not callable");  
       }  
     
@@ -150,21 +140,9 @@
   });
 })();
 
-
-/**
- * JNode
- *
- * @class
- * @param       {String}    tag
- * @param       {Object}    attr
- * @constructor
- *
- */
 var JNode = (function() {
-  /** @private */
   var EL_DIV = document.createElement('div');
   
-  /** @private */
   var CONTAINERS = {
     'tbody':  'table',
     'tfoot':  'table',
@@ -175,26 +153,19 @@ var JNode = (function() {
     '*':      'div'
   };
 
-  /** @private */
   var INSERTION = {
-    /** @private */
     before: function(element, node) {
       element.parentNode.insertBefore(node, element);
     },
-    /** @private */
     top: function(element, node) {
       element.insertBefore(node, element.firstChild);
     },
-    /** @private */
     bottom: function(element, node) {
       element.appendChild(node);
     },
-    /** @private */
     after: function(element, node) {
       element.parentNode.insertBefore(node, element.nextSibling);
     },
-    
-    // used to generate HTML-nodes from a string
     tags: {
       TABLE:  ['<table>',                '</table>',                   1],
       TBODY:  ['<table><tbody>',         '</tbody></table>',           2],
@@ -208,21 +179,14 @@ var JNode = (function() {
     }
   };
   
-  /** @private */
   var SLICE = Array.prototype.slice;
   
-  /** @private */
   var EMPTY_ARRAY = [];
   
-  /** @private */
   var ANON_ID_COUNTER = 0;
   
-  /** @private */
   var STORAGE_ID_COUNTER = 10;
   
-  // ----------------------------------------------
-  
-  /** @private */
   function fragment(html) 
   {
     var name = ((html = html.trim()).match(/^\<([^\s>]+)/) || [0, '*'])[1].toLowerCase();
@@ -234,59 +198,35 @@ var JNode = (function() {
     parent.innerHTML = html;
     
     if (parent.firstChild && parent.firstChild.nextSibling)
-      // alle elemente zurückgeben inkl. eltern-element
       return parent;
       
-    // nur die generierten elemente (firstChild) zurückgeben
     var element = parent.childNodes[0].cloneNode(true);
     
-    // speicher freigeben
     parent = null;
     return element;
   }
   
-  // ----------------------------------------------
-  // TODO: Node <> Element
-  
-  /** @private */
   function JNode(tag, attr) 
   {   
     this.constructor = JNode;
     
-    // node erstellen
-    this.node = (tag instanceof Node || tag === document) // tag ist bereits ein element
-      ? tag : (tag instanceof JNode) // jnode-object
-        ? tag.node : (tag.substr(0, 1) !== '<') // tag oder html
+    this.node = (tag instanceof Node || tag === document)
+      ? tag : (tag instanceof JNode)
+        ? tag.node : (tag.substr(0, 1) !== '<')
           ? document.createElement(tag) : fragment(tag);
     
-    // hooks ausführen
     if (this.hook) this.hook();
     
-    // HTML5 classList polyfill
     this._classList();
     
-    // attribute setzen
     if (attr) this.attr(attr);
   }
 
-  // prototype
   JNode.prototype = {
-    /** @private */
     _classList: function _classList() {
-      /**
-       * HTML5 classList
-       *
-       * @field
-       */
       this.classList = this.prop('classList');
     },
     
-    /**
-     * Entfernt eine Klasse
-     *
-     * @param     {String|RegExp}   name
-     * @returns   {JNode}
-     */
     removeClass: function removeClass(name)
     {
       if (name instanceof RegExp) {
@@ -307,63 +247,29 @@ var JNode = (function() {
       return this;
     },
     
-    /**
-     * Fügt eine Klasse hinzu
-     *
-     * @param     {String}          name
-     * @returns   {JNode}
-     */
     addClass: function addClass(name)
     {
       this.classList.add(name);
       return this;
     },
     
-    /**
-     * Überschreibt alle Klassen mit der Angegebenen
-     *
-     * @param     {String}          name
-     * @returns   {JNode}
-     */
     setClass: function setClass(name) 
     {
       this.prop('className', name);
       return this;
     },
     
-    /**
-     * Prüft ob das akuelle Element eine bestimmte Klasse besitzt.
-     *
-     * @param     {String}          name
-     * @returns   {Boolean}
-     */
     hasClass: function hasClass(name)
     {
       return this.classList.contains(name);
     },
     
-    /**
-     * Fügt eine Klasse hinzu, falls diese nicht bereits exisitiert.
-     * Andernfalls wird diese entfernt.
-     *
-     * @param     {String}          name
-     * @returns   {JNode}
-     */
     toggleClass: function toggleClass(name)
     {
       this.classList.toggle(name);
       return this;
     },
     
-    /**
-     * Ruft eine Methode der Klasse JNode auf, 
-     * wenn der Browser für kurze Zeit nichts weiter zu tun hat (idle).
-     * 
-     * @see       JNode.defer
-     * @param     {String}          method
-     * @param     {Object}          ...
-     * @returns   {JNode}
-     */
     defer: function defer() 
     {
       var args = SLICE.call(arguments, 0),
@@ -373,18 +279,6 @@ var JNode = (function() {
       return this;
     },
     
-    /**
-     * Ändert oder gibt Attribute des Elements zurück.
-     *
-     * @example var node = new JNode("div"); 
-     * node.attr("title", "test"); // schreibt das Attribut "title" mit Inhalt "test"
-     * node.attr("title"); // gibt das Attribut "title" zurück. Inhalt: "test"
-     * node.attr("title", null); // entfernt das Attribut "title"
-     *
-     * @param     {String|Object}     needle
-     * @param     {String|undefined}  value
-     * @returns   {JNode|String}
-     */
     attr: function attr(needle, value) 
     {
       if (arguments.length === 2) {
@@ -407,19 +301,6 @@ var JNode = (function() {
       return this;
     },
     
-    /**
-     * Ändert oder gibt Style-Eigenschaften zurück.
-     *
-     * @example var node = new JNode("div");
-     * node.style("width", "100px"); // setzt die width-Eigenschaft auf 100px
-     * node.style("width:200px;"); // setzt die width-Eigenschaft auf 200px (Alternativsyntax)
-     * node.style("width"); // gibt die width-Eigenschaft zurück. Inhalt: 200px
-     * node.style("width", null); // entfernt die width-Eigenschaft
-     *
-     * @param     {String|Object}     needle
-     * @param     {String|undefined}  value
-     * @returns   {JNode|String}
-     */
     style: function style(needle, value) 
     {
       if (arguments.length === 2) {
@@ -438,7 +319,6 @@ var JNode = (function() {
           return this;
         }
         
-        // check style first
         var value;
         
         if (!!(value = this.node.style.getPropertyValue(needle)))
@@ -449,50 +329,15 @@ var JNode = (function() {
           .getPropertyValue(needle);
       }
       
-      // pretty bad. all the reflows and repaintings ...
-      // but this is the only "clean" way to remove properties
-      // if `v` is empty/null
       JNode.each(needle, function(v, k) { this.style(k, v); }, this);
       return this;
     },
     
-    /**
-     * Versteckt das Element (display:none)
-     *
-     * @example var node = new JNode(document.body);
-     * node.hide(); // setzt die CSS display-Eigenschaft auf "none"
-     *
-     * @returns  {JNode}
-     */
     hide: function hide()
     {
       return this.style("display:none;");
     },
     
-    /**
-     * Zeigt das Element an (display-Eigenschaft wird entfernt)
-     *
-     * @example var node = new JNode(document.body);
-     * node.hide(); // siehe JNode#hide()
-     * node.show(); // zeigt das Element wieder an.
-     *
-     * @example Achtung: 
-     * Wenn ein Element über eine externe Quelle per CSS 
-     * &lt;style&gt; oder &lt;link .../&gt; versteckt wurde, 
-     * zeigt die Verwendung von JNode#show() keine Wirkung, da hierbei nur 
-     * die Inline-Style-Eigenschaft "display" entfernt, nicht aber 
-     * überschrieben wird.
-     *
-     * &lt;style type="text/css"&gt;
-     *    #idref { display:none; }
-     * &lt;/style&gt;
-     *
-     * &lt;script type="text/javascript"&gt;
-     *    $("idref").show(); // Funktioniert nicht wie erwartet
-     * &lt;/script&gt;
-     *
-     * @returns  {JNode}
-     */
     show: function show()
     {
       if (this.style("display") == "none")  
@@ -501,7 +346,6 @@ var JNode = (function() {
       return this;
     }, 
     
-    // TODO: doku
     dim: function dim() 
     {
       var props = [this.prop('offsetWidth'), this.prop('offsetHeight')];     
@@ -536,7 +380,6 @@ var JNode = (function() {
       });
     },
     
-    // TODO: doku
     width: function width()
     {
       var width;
@@ -547,7 +390,6 @@ var JNode = (function() {
       return this.dim().width;
     },
     
-    // TODO: doku
     height: function height()
     {
       var height;
@@ -558,27 +400,6 @@ var JNode = (function() {
       return this.dim().height;
     },
     
-    /**
-     * Ändert oder gibt Daten zurück, die über die HTML5 dataset-Eigenschaft
-     * definiert wurden.
-     *
-     * @example &lt;div id="idref" data-foo="bar"/&gt;
-     * @example $("idref").data("foo"); // Inhlat: "bar"
-     * $("idref").data("foo", "baz"); // Überschreibt den Index "foo" mit "baz"
-     * $("idref").data("bar", 1234); // legt einen neuen Index "bar" mit dem Wert 1234 an
-     *
-     * @example Bitte beachten:
-     * Alle Objekte, die über die dataset-Eigenschaft gespeichert werden, ergeben
-     * echte HTML-Attribute. Daher sollten nur scalar-Werte (Number, Boolean, String) 
-     * abgelegt werden.
-     *
-     * Komplexere Objekte können über JNode#store() gespeichert werden.
-     * 
-     *
-     * @param     {String}            needle
-     * @param     {String|undefined}  value
-     * @returns   {JNode|Object}
-     */
     data: function data(needle, value) 
     {
       if (arguments.length === 2) {
@@ -589,34 +410,11 @@ var JNode = (function() {
       return this.node.dataset[needle];
     },
     
-    /**
-     * Sucht nach Kind-Elementen innerhalb des aktuellen Elements 
-     * anhand eines CSS-Selektors.
-     *
-     * @example &lt;div id="idref"&gt;&lt;p&gt;&lt;span&gt;&lt;em&gt;Beispiel&lt;/em&gt;&lt;/span&gt;&lt;/p&gt;&lt;/div&gt;
-     * @example $("idref").select('span, em'); // Gibt eine JNode.List zurück
-     * // mit den Elementen &lt;span&gt; und &lt;em&gt; zurück
-     *
-     *
-     * @param     {String}        selector
-     * @returns   {JNode.List}
-     */
     select: function select(selector) 
     {
       return JNode.find(selector, this.node);
     },
     
-    /**
-     * Ändert oder gibt Eigenschaften zurück.
-     *
-     * @example &lt;div id="idref"&gt;&lt;/div&gt;
-     * @example $("idref").prop('nodeName'); // gibt "DIV" zurück
-     * @example $("idref").prop('innerHTML', 'test!'); // Schreibt "test!" in innerHTML
-     *
-     * @param     {String}            needle
-     * @param     {Object|undefined}  value
-     * @returns   {JNode|Object}
-     */
     prop: function prop(needle, value) 
     {
       if (arguments.length === 2) {
@@ -627,16 +425,6 @@ var JNode = (function() {
       return this.node[needle];
     },
     
-    /**
-     * Erstellt ein eindeutiges ID-Attribut, falls noch keines vergeben wurde.
-     *
-     * @example var id = $("&lt;div/&gt;").append(document.body).identify(); 
-     * // Speichert das Element innerhalb des &lt;body&gt;-Elements und erzeugt
-     * // eine referenzierbare ID
-     * var node = $(id); // findet das oben erstellte Element im Dokument
-     *
-     * @return  String
-     */
     identify: function identify() 
     {
       var id;
@@ -652,25 +440,8 @@ var JNode = (function() {
       return id;
     },
     
-    /**
-     * Umhüllt das aktuelle Element mit einem angegegenen Element
-     * 
-     * @example var node = new JNode('p'); // erzeugt ein P-Element
-     * node.append(document.body); // Speichert das Element innerhalb von &lt;body&gt;
-     *
-     * @example &lt;p&gt;&lt;/p&gt;
-     *
-     * @example node.wrap('div');
-     *
-     * @example &lt;div&gt;&lt;p&gt;&lt;/p&gt;&lt;/div&gt;
-     *
-     * @param     {Element|JNode|String}    wrapper
-     * @returns   {JNode}
-     */
     wrap: function wrap(wrapper)
     {
-      // TODO: INSERTIONS
-      
       if (!(wrapper instanceof JNode))
         wrapper = new JNode(wrapper);
       
@@ -682,24 +453,12 @@ var JNode = (function() {
       return wrapper;
     },
     
-    /**
-     * Entfernt alle Events und Storage-Eigenschaften von diesem, sowie von 
-     * Kind-Elementen und löscht dieses aus dem Dokument.
-     *
-     * @returns  {JNode}
-     */
     remove: function remove()
     {
       this.purge().node.parentNode.removeChild(this.node);
       return this;
     },
     
-    /**
-     * Gibt alle Kind-Elemente zurück (keine Text-Knoten)
-     *
-     * @param     {Boolean}       all
-     * @returns   {JNode.List}
-     */
     childs: function childs(all) 
     { 
       if (all)
@@ -715,66 +474,21 @@ var JNode = (function() {
       return new JNode.List(nodes);
     },
     
-    /**
-     * Gibt das erste Element zurück, welches zu den angegebenen CSS-Selector passt.
-     * Ist kein CSS-Selector angegeben, wird das erste Element zurückgegben.
-     *
-     * @example &lt;div id="idref"&gt;&lt;p&gt;&lt;span<&gt;&lt;/span&gt;&lt;/p&gt;&lt;/div&gt;
-     * @example $("idref").first(); // gibt das darauf erste P-Element zurück
-     * @example $("idref").first('span'); // gibt das erste SPAN-Element zurück
-     *
-     * @param     {String}        selector
-     * @returns   {JNode|null}
-     */
     first: function first(selector) 
     {
       return JNode.find(selector || '*', this.node, true);
     },
     
-    /**
-     * Prüft, ob das aktuelle Element mit dem übergebenen CSS-Selektor gefunden werden 
-     * kann. 
-     *
-     * @example &lt;p id="idref"&gt;&lt;/p&gt;
-     * @example $("idref").match("p"); // Ergibt TRUE. "p" passt auf unser Element
-     * $("idref").match("div"); // Ergibt FALSE. "div" passt nicht auf "p"
-     * $("idref").match("#idref"); // Ergibt TRUE, #idref passt auf dieses Element
-     *
-     * @example Achtung:
-     * Internet Explorer und MobileWebkit-basierte Browser neigen hier zu 
-     * Geschwindigkeitseinbußen. Im Internet Explorer jedoch nur, wenn das Element NICHT
-     * im aktuellen Dokument existiert (z.b. weil dieses eben erst erstellt wurde).
-     *
-     * @param     {String}    selector
-     * @returns   {Boolean}
-     */
     match: function match(selector)
     {
       return JNode.match(selector, this.node);
     },
     
-    /**
-     * Gibt das Elternelement oder, wenn dieses nicht existiert, sich selbst zurück.
-     *
-     * @example &lt;div&gt;&lt;p id="idref"&gt;&lt;/p&gt;&lt;/div&gt;
-     * @example $("idref").parent(); // Gibt das übergeornete DIV-Element zurück.
-     * 
-     * @returns   {JNode}
-     */
     parent: function parent()
     {
       return this.node.parentNode ? new JNode(this.node.parentNode) : this;
     },
     
-    /**
-     * Wandert Elemente ausgehend vom aktuellen nach oben im Dokument.
-     *
-     * @example &lt;div&gt;&lt;p id="idref"&gt;&lt;/p&gt;&lt;/div&gt;
-     * @example $("idref").up("div"); // Wandert zum übergeordnetem DIV-Element
-     * 
-     * @param     {String}        selector
-     * @returns   {JNode|null}
-     */
     up: function up(selector) 
     {
       if (arguments.length === 0) 
@@ -797,15 +511,6 @@ var JNode = (function() {
       return p ? new JNode(p) : null;
     },
     
-    /**
-     * Wandert Elemente ausgehend vom aktuellen nach unten im Dokument.
-     *
-     * @example &lt;div id="idref"&gt;&lt;p&gt;&lt;/p&gt;&lt;/div&gt;
-     * @example $("idref").down("p"); // Wandert zum untergeorndetem P-Element
-     *
-     * @param     {String}        selector
-     * @returns   {JNode|null}
-     */
     down: function down(selector, index) {
       if (arguments.length === 0)
         return this.first();
@@ -817,15 +522,6 @@ var JNode = (function() {
       return childs && childs[index] ? new JNode(childs[index]) : null;
     },
     
-    /**
-     * Gibt das nächste Element auf der selben Ebene zurück
-     *
-     * @example &lt;div id="idref"&gt;&lt;/div&gt;&lt;p&gt;&lt;/p&gt;
-     * @example $("idref").next("p"); // Gibt das folgende P-Element zurück
-     *
-     * @param     {String}    selector
-     * @returns   {JNode|null}
-     */
     next: function next(selector) {      
       var nodes  = this.parent().childs(),
           length = nodes.length;
@@ -850,7 +546,6 @@ var JNode = (function() {
       return null;
     },
     
-    // TODO: doku
     find: function find(selector)
     {
       if (!selector)
@@ -868,51 +563,8 @@ var JNode = (function() {
       return null;
     },
     
-    /**
-     * Fügt Elemente oder Texte an der angegebenen Position in das Element ein
-     *
-     * @example var node = new JNode("div");
-     * node.insert("hallo");
-     * node.insert(new JNode('span').insert("welt"));
-     * node.insert("1234", "top"); // top: Fügt die Daten an den Anfang hinzu
-     * node.insert("5678", "before"); // before: Fügt die Daten vor das Element hinzu
-     * node.insert("9123", "after"); // after: Fügt die Daten nach das Element hinzu
-     * node.insert("4567", "bottom"); // bottom: Fügt die Daten ans Ende des Elements hinzu
-     *
-     * @example Bitte beachten:
-     * Unter Firefox agiert diese Methode ein wenig langsamer als normal, da
-     * native Unterstützung für das Einfügen von Texten/Elementen an bestimmten Positionen
-     * nicht oder nur teilweiße/über Umwege gegeben ist.
-     *
-     * Sie sollten daher immer möglichst viele Daten auf einmal hinzufügen.
-     *
-     * @example node.insert("hallo" + " " + "welt"); // Schneller als:
-     * node.insert("hallo").insert(" ").insert("welt");
-     *
-     * @example Mehrere Elemente können als Array übergeben werden, doch auch hier
-     * ist es Ratsam diese in ein DocumentFragment zu packen.
-     *
-     * @example // Langsamer:
-     * node.insert([
-     *   document.createElement("div"),
-     *   document.createElement("div"),
-     *   document.createElement("div")
-     * ]);
-     *
-     * // Schneller:
-     * var fragment = document.createDocumentFragment();
-     * fragement.appendChild(document.createElement("div"));
-     * fragement.appendChild(document.createElement("div"));
-     * fragement.appendChild(document.createElement("div"));
-     * node.insert(fragment);
-     *
-     * @param     {String|Node|JNode|Array[Node]} data
-     * @param     {String}                        pos
-     * @returns   {JNode}
-     */
     insert: function insert(data, pos)
     {
-      /** @default "bottom" */
       pos = (pos || 'bottom').toLowerCase();
       
       if (data instanceof JNode)
@@ -923,7 +575,6 @@ var JNode = (function() {
       return this.insertNode(data, pos);    
     },
     
-    /** @private */
     insertText: function(content, pos) 
     {
       var div = EL_DIV, mth;
@@ -950,7 +601,6 @@ var JNode = (function() {
       return this.insertNode(nodes, pos);
     },
     
-    /** @private */
     insertNode: function(content, pos) 
     {
       var mth = INSERTION[pos] || INSERTION['bottom'];
@@ -963,7 +613,6 @@ var JNode = (function() {
       if (pos === 'top' || pos === 'after') 
         content.reverse();
       
-      //for each(var node in data)
       for (var i = 0, l = content.length; i < l; ++i) { 
         var node = content[i];
         
@@ -976,21 +625,6 @@ var JNode = (function() {
       return this;
     },
     
-    /**
-     * Erneuert den Inhalt des Elements in dem es zuvor alle aktuellen Inhalte entfernt.
-     *
-     * @example Diese Funktion entspricht JNode#insert() mit dem Unterschied,
-     * dass mit dieser Methode alle Inhalte zuvor entfernt werden. 
-     *
-     * Folglich existiert auch kein `pos` Parameter, da die Daten immer innerhalb
-     * anstelle des alten Inhalts platziert werden.
-     *
-     * Alle Kindelemente werden vor dem entfernen noch von Events 
-     * und Storage-Eigenschaften befreit (siehe dazu JNode.remove())
-     *
-     * @param     {String|Node|JNode|Array[Node]}    content
-     * @returns   {JNode}
-     */
     update: function update(content)
     { 
       this.childs(true).invoke('purge');
@@ -1007,21 +641,6 @@ var JNode = (function() {
       return this;
     },
     
-    /**
-     * Fügt das aktuelle Element in das angegebene Element ein.
-     *
-     * @example var node = new JNode("div");
-     * node.append(document.body); // fügt das Element in &lt;body&gt;-Element ein
-     *
-     * @example Falls Sie, wie in der Methode JNode.insert() die Position angeben möchten,
-     * können Sie auch so vorgehen:
-     *
-     * var node = new JNode("div");
-     * $(document.body).insert(node, "position");
-     *
-     * @param     {Element|JNode}   element
-     * @return    {JNode}
-     */
     append: function append(element)
     {
       var node = this.node;
@@ -1036,13 +655,6 @@ var JNode = (function() {
       return this;
     },
     
-    /**
-     * Kopiert das Element und entfernt, falls gewünscht das ID-Attribut.
-     * 
-     * @param     {Boolean}   deep
-     * @param     {Boolean}   removeId
-     * @returns   {JNode}
-     */
     clone: function clone(deep, removeId)
     {
       var c = new JNode(this.node.cloneNode(!!deep));
@@ -1055,7 +667,6 @@ var JNode = (function() {
   };
   
   (function() {
-    /** @private */
     function convertPosition(pos) 
     {
       switch ((pos || 'bottom').toLowerCase()) {
@@ -1074,7 +685,6 @@ var JNode = (function() {
     }
     
     if (typeof EL_DIV.insertAdjacentHTML === "function") {
-      /** @private */
       JNode.prototype.insertText = function insertText(content, pos) 
       {
         this.node.insertAdjacentHTML(convertPosition(pos), content);
@@ -1083,7 +693,6 @@ var JNode = (function() {
     }
     
     if (typeof EL_DIV.insertAdjacentElement == "function") {
-      /** @private */
       JNode.prototype.insertNode = function insertNode(content, pos) 
       {
         this.node.insertAdjacentElement(convertPosition(pos), content);
@@ -1093,7 +702,6 @@ var JNode = (function() {
   })();
   
   if (typeof EL_DIV.dataset === "undefined") {
-    // MSIE 9 untersützt .dataset nicht, aber "data-xyz"-attribute
     JNode.prototype.data = function data(needle, value) 
     {
       if (arguments.length === 2) {
@@ -1106,46 +714,27 @@ var JNode = (function() {
   }
   
   if (typeof EL_DIV.classList === "undefined") {
-    // HTML5 classList polyfill
     JNode.prototype._classList = function _classList()
     {
       var node = this.node, self = this;
       
-      /** @private */
       function ts(c) { return c ? c.toString() : ""; }
       
       this.classList = {
-        /** @private */
         add:      function(name) { node.className += " " + name; },
-        /** @private */
         remove:   function(name) { node.className = ts(node.className).replace(new RegExp("\\b" + name + "\\b", "g"), ''); },
-        /** @private */
         contains: function(name) { return ts(node.className).match(new RegExp("\\b" + name + "\\b")) != null; },
-        /** @private */
         item:     function(index) { return (ts(node.className).split(" ") || [])[index]; },
-        /** @private */
         toggle:   function(name) { this[this.contains(name) ? 'remove' : 'add'](name); },
-        /** @private */
         toString: function() { return ts(this.node.className); }
       };
       
       Object.defineProperty(this.classList, 'length', { 
-        /** @private */
         get: function() { return ts(node.className).split(" ").length; }
       });
     };
   }
   
-  // ----------------------------------------------
-  // node-list
-  
-  /**
-   * JNode.List
-   *
-   * @class 
-   * @param         {Array[Element|JNode]}
-   * @constructor
-   */
   JNode.List = function JList(nodes)
   {
     this.constructor = JList;
@@ -1156,26 +745,12 @@ var JNode = (function() {
     this.length = l;
   };
 
-  // prototype
   JNode.List.prototype = {
-    /**
-     * Speichert alle Nodes in dieser Instanz als Array-like Eigenschaften
-     *
-     * @param     {Number}    index
-     * @param     {Element}   node
-     */
     _process: function _process(index, node) 
     {
       this[index] = (node instanceof JNode) ? node : new JNode(node);
     },
     
-    /**
-     * Ruft eine Methode aller Elemente auf
-     *
-     * @param     {String}      method
-     * @param     {Object}      ...
-     * @returns   {JNode.List}
-     */
     invoke: function invoke()
     {
       var args   = SLICE.call(arguments, 0),
@@ -1187,12 +762,6 @@ var JNode = (function() {
       return this;
     },
     
-    /**
-     * Sammelt eine bestimmte Eigenschaft aller Elemente
-     *
-     * @param     {String}          prop
-     * @returns   {Array[String]}
-     */
     pluck: function pluck(prop)
     {
       var props = [];
@@ -1203,27 +772,12 @@ var JNode = (function() {
       return props;
     },
     
-    /**
-     * alias für JNode.each
-     *
-     * @see       JNode.each
-     * @param     {Function}      func
-     * @param     {Object}        context
-     * @returns   {JNode.List}
-     */
     each: function each(func, context)
     {
       JNode.each(this, func, context);
       return this;
     },
     
-    /**
-     * Filtert Elemente anhand eines Callbacks
-     *
-     * @param     {Function}    func
-     * @param     {Object}      context
-     * @returns   {JNode.List}
-     */
     filter: function filter(func, context)
     {
       var nodes = [];
@@ -1238,25 +792,8 @@ var JNode = (function() {
     }
   };
   
-  // ----------------------------------------------
-  // storage
-  
-// TODO: use sessionStorage
-
-/**
- * In diesem Objeckt werden alle Daten gespeichert die per 
- * JNode#store() oder JNode.store() hinzugefügt wruden.
- *
- * @static
- */
 JNode.Storage = {};
 
-/**
- * Gibt das globale Storage-Objekt zurück (bezieht sich auf `window`).
- *
- * @static
- * @returns   {Object}
- */
 JNode.getStorage = function getStorage()
 {
   if (!JNode.Storage[0])
@@ -1265,26 +802,11 @@ JNode.getStorage = function getStorage()
   return JNode.Storage[0];
 };
 
-/**
- * Speichert Daten im globalen Storage-Objekt
- *
- * @static
- * @param     {String}    needle
- * @param     {Object}    value
- */
 JNode.store = function store(needle, value)
 {
   JNode.getStorage()[needle] = value;
 };
 
-/**
- * Gibt daten aus dem globalen Storage-Objekt zurück.
- *
- * @static
- * @param     {String}    needle
- * @param     {Object}    fallback
- * @returns   {Object}
- */
 JNode.fetch = function fetch(needle, fallback)
 {
   var storage = JNode.getStorage();
@@ -1295,22 +817,12 @@ JNode.fetch = function fetch(needle, fallback)
   return storage[needle];
 };
 
-/**
- * Entfernt alle Events und löscht alle Daten des globalen Storage-Objekts
- *
- * @static
- */
 JNode.purge = function purge()
 {
   JNode.release(window);
   delete JNode.Storage[0];
 };
 
-/**
- * Erstellt und gibt das Storage-Objekt für dieses Element zurück.
- *
- * @returns   {Object}
- */
 JNode.prototype.getStorage = function getStorage()
 {
   var uid;
@@ -1335,13 +847,6 @@ JNode.prototype.getStorage = function getStorage()
   return JNode.Storage[uid];
 };
 
-/**
- * Speichert Daten im Storage-Objekt
- *
- * @param     {String}    needle
- * @param     {Object}    value
- * @returns   {JNode}
- */
 JNode.prototype.store = function store(needle, value)
 {
   var storage = this.getStorage();
@@ -1350,13 +855,6 @@ JNode.prototype.store = function store(needle, value)
   return this;
 };
 
-/**
- * Gibt ein gespeichertes Objekt zurück.
- *
- * @param     {String}            needle
- * @param     {Object}            fallback
- * @returns   {Object|undefined}
- */
 JNode.prototype.fetch = function fetch(needle, fallback)
 {
   var storage = this.getStorage();
@@ -1367,11 +865,6 @@ JNode.prototype.fetch = function fetch(needle, fallback)
   return storage[needle];
 };
 
-/**
- * Entfernt alle Events und löscht alle gespeicherten Daten im Storage-Objekt
- *
- * @returns   {JNode}
- */
 JNode.prototype.purge = function purge()
 {
   JNode.release(this.node);
@@ -1386,16 +879,10 @@ JNode.prototype.purge = function purge()
   
   return this;
 };
-
-  
-  // ----------------------------------------------
-  // event-handling
   
 (function() {
-  /** @private */
   var MOUSEENTER_LEAVE = ('onmouseleave' in EL_DIV && 'onmouseenter' in EL_DIV);
   
-  /** @private */
   function getRegistry(element) 
   {
     if (element === window)
@@ -1404,7 +891,6 @@ JNode.prototype.purge = function purge()
     return new JNode(element).fetch('_eventhandler', {});
   }
   
-  /** @private */
   function createResponder(element, eventName, handler, once)
   {
     var responder = (function() {
@@ -1453,7 +939,6 @@ JNode.prototype.purge = function purge()
     return responder;
   }
   
-  /** @private */
   function register(element, eventName, handler, useCapture, once) 
   {
     var registry = getRegistry(element);
@@ -1477,7 +962,6 @@ JNode.prototype.purge = function purge()
     return entry;
   }
   
-  /** @private */
   function unregister(element, eventName, handler, useCapture) 
   {
     var registry = getRegistry(element);
@@ -1498,7 +982,6 @@ JNode.prototype.purge = function purge()
     return null;
   }
   
-  /** @private */
   function realEventName(eventName)
   {
     switch (eventName) {
@@ -1514,7 +997,6 @@ JNode.prototype.purge = function purge()
     return eventName;
   }
   
-  /** @private */
   function releaseAll(element, useCapture) 
   {
     var registry = getRegistry(element),
@@ -1536,7 +1018,6 @@ JNode.prototype.purge = function purge()
     }
   }
   
-  /** @private */
   function releaseType(element, eventName, useCapture) 
   {
     var registry = getRegistry(element)[eventName] || [],
@@ -1554,19 +1035,6 @@ JNode.prototype.purge = function purge()
     }
   }
   
-  // ----------------------------------------------
-  
-  /**
-   * Fügt einen Event-Handler hinzu
-   *
-   * @event
-   * @static
-   * @param     {Element|Window}    element
-   * @param     {String}            eventName
-   * @param     {Function}          handler
-   * @param     {Boolean}           useCapture
-   * @param     {Boolean}           once
-   */
   JNode.listen = function listen(element, eventName, handler, useCapture, once)
   {
     if (element instanceof JNode)
@@ -1574,7 +1042,6 @@ JNode.prototype.purge = function purge()
       
     useCapture = useCapture && useCapture === true;
     
-    // dom:loaded | dom:ready -> DOMContentLoaded
     if (eventName === 'dom:loaded' || eventName === 'dom:ready') {
       if (JNode.loaded === true) {
         handler.call(element);
@@ -1595,33 +1062,11 @@ JNode.prototype.purge = function purge()
     element.addEventListener("dataavailable", responder, useCapture);
   };
   
-  /**
-   * Registriert einen listener für den angegebenen Event und entfernt diesen
-   * wenn der Event zum ersten mal ausgelöst wurde.
-   *
-   * @event
-   * @static
-   * @see       JNode.listen()
-   * @param     {Element|Window}    element
-   * @param     {String}            eventName
-   * @param     {Function}          handler
-   * @param     {Boolean}           useCapture
-   */
   JNode.one = function one(element, eventName, handler, useCapture)
   {     
     JNode.listen(element, eventName, handler, useCapture, true);
   };  
   
-  /**
-   * Entfernt einen Event-Handler
-   *
-   * @event
-   * @static
-   * @param     {Element|Window}    element
-   * @param     {String}            eventName
-   * @param     {Function}          handler
-   * @param     {Boolean}           useCapture
-   */
   JNode.release = function release(element, eventName, handler, useCapture)
   {
     if (element instanceof JNode)
@@ -1661,16 +1106,6 @@ JNode.prototype.purge = function purge()
     element.removeEventListener("dataavailable", responder, useCapture);
   };
   
-  /**
-   * Feuert einen Benutzerevent
-   *
-   * @event
-   * @static
-   * @param     {Element|Window}    element
-   * @param     {String}            eventName
-   * @param     {Object}            meta
-   * @param     {Boolean}           bubble
-   */
   JNode.fire = function fire(element, eventName, meta, bubble) {
     bubble = bubble ? !!bubble : true;
     
@@ -1685,39 +1120,18 @@ JNode.prototype.purge = function purge()
     element.dispatchEvent(event);
   };
   
-  /**
-   * Entspricht JNode.listen(), bezieht sich aber auf das aktuelle Element
-   * 
-   * @event
-   * @see       JNode.observe
-   * @returns   {JNode}
-   */
   JNode.prototype.listen = function listen(eventName, handler, useCapture)
   {
     JNode.listen(this.node, eventName, handler, useCapture);
     return this;
   };
   
-  /**
-   * Entspricht JNode.one(), bezieht sich aber auf das aktuelle Element
-   *
-   * @event
-   * @see       JNode.one
-   * @returns   {JNode}
-   */
   JNode.prototype.one = function one(eventName, handler, useCapture)
   {
     JNode.one(this.node, eventName, handler, useCapture);
     return this;
   };
   
-  /**
-   * Entspricht JNode.release(), bezieht sich aber auf das aktuelle Element
-   *
-   * @event
-   * @see       JNode.release
-   * @returns   {JNode}
-   */
   JNode.prototype.release = function release(eventName, handler, useCapture)
   {
     var args = SLICE.call(arguments);
@@ -1727,13 +1141,6 @@ JNode.prototype.purge = function purge()
     return this;
   };
   
-  /**
-   * Entspricht JNode.fire(), bezieht sich aber auf das aktuelle Element
-   *
-   * @event
-   * @see       JNode.fire
-   * @returns   {JNode}
-   */
   JNode.prototype.fire = function fire(eventName, meta, bubble)
   {
     JNode.fire(this.node, eventName, meta, bubble);
@@ -1743,44 +1150,18 @@ JNode.prototype.purge = function purge()
   JNode.loaded = false;
   JNode.listen(document, 'DOMContentLoaded', function() { JNode.loaded = true; });
   
-  // ------------------------------------------------
-  
-  /**
-   * JNode.Event
-   *
-   * @class
-   * @param         {Event}     event
-   * @constructor
-   */
   JNode.Event = function JEvent(event)
   {
     this.constructor = JEvent;
     
-    /**
-     * Originaler Event
-     *
-     * @field
-     */
     this.event = event;
     
-    /**
-     * Speichert ob der aktuelle Event gestoppt wurde
-     *
-     * @field
-     */
     this.stopped = false;
     
-    // hooks ausführen
     if (this.hook) this.hook();
   };
   
-  // prototype
   JNode.Event.prototype = {
-    /**
-     * Gibt das Ziel-Element zurück
-     *
-     * @returns   {JNode}
-     */
     element: function element()
     {
       var node = this.event.target || this.event.srcElement, 
@@ -1789,9 +1170,6 @@ JNode.prototype.purge = function purge()
       var currentTarget = this.event.currentTarget;
 
       if (currentTarget && currentTarget.tagName) {
-        // Firefox screws up the "click" event when moving between radio buttons
-        // via arrow keys. It also screws up the "load" and "error" events on images,
-        // reporting the document as the target instead of the original image.
         if (type === 'load' || type === 'error' ||
           (type === 'click' && currentTarget.tagName.toLowerCase() === 'input'
             && currentTarget.type === 'radio'))
@@ -1801,11 +1179,6 @@ JNode.prototype.purge = function purge()
       return new JNode(node);
     },
     
-    /**
-     * Stoppt den Event
-     *
-     * @returns   {JNode.Event}
-     */
     stop: function stop() 
     {
       this.event.preventDefault();
@@ -1815,11 +1188,6 @@ JNode.prototype.purge = function purge()
       return this;
     },
     
-    /**
-     * Gibt die aktuelle Mauszeigerposition zurück
-     *
-     * @returns   {Object}
-     */
     pointer: function pointer() 
     {
       return { 
@@ -1830,36 +1198,14 @@ JNode.prototype.purge = function purge()
   };
 })();
   
-  // ----------------------------------------------
-  // ajax/jsonp
-  
-/** @private */
 var JSONP_CALLBACK_COUNTER = 0;
 
-/**
- * JNode.Request
- *
- * @class
- * @param       {String}    url
- * @param       {Object}    options
- * @constructor
- */
 JNode.Request = function JRequest(url, options)
 {
   this.constructor = JRequest;
   
-  /** 
-   * Ajax/JSONP URL
-   *
-   * @field 
-   */
   this.url = url;
   
-  /** 
-   * AJAX/JSONP Optionen
-   *
-   * @field 
-   */
   this.options = JNode.merge({ 
     method:       "post",
     data:         {}, 
@@ -1869,31 +1215,19 @@ JNode.Request = function JRequest(url, options)
     encoding:     'UTF-8',
     parseHtml:    false,
     
-    // event-handler
     onSuccess:    JNode.noop,
     onFailure:    JNode.noop,
     onProgress:   JNode.noop,
     onUpload:     JNode.noop
   }, options || {});
   
-  /** 
-   * AJAX Anfragemethode
-   * 
-   * @field 
-   */
   this.method = this.options.method;
   this.request();
 };
 
-// prototype
 JNode.Request.prototype = {    
-  /**
-   * Initialisiert die Anfrage
-   *
-   */
   request: function request()
   {
-    // JSONP
     if (this.options.jsonp) {
       var jsonp = '_jnode_jsonp_ref_' + JSONP_CALLBACK_COUNTER++;
       window[jsonp] = this.options.jsonp;
@@ -1915,22 +1249,14 @@ JNode.Request.prototype = {
       return;
     }
     
-    // AJAX
-    /** 
-     * XMLHttpRequest Instanz
-     *
-     * @field 
-     */
     this.transport = new XMLHttpRequest;
     this.transport.open(this.method, this.url, this.options.async);
     
-    // set request headers
     this.transport.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-    this.transport.setRequestHeader('Accept', 'text/javascript, text/html, application/xml, text/xml, *' + '/' + '*'); // notepad++ bug
+    this.transport.setRequestHeader('Accept', 'text/javascript, text/html, application/xml, text/xml, *' + '/' + '*');
     
     var data = this.options.data;
     
-    // prepare body
     if (this.method === 'post') {  
       this.transport.setRequestHeader('Content-type', this.options.contentType
         + (this.options.encoding ? '; Charset=' + this.options.encoding : ''));
@@ -1941,9 +1267,6 @@ JNode.Request.prototype = {
           this.transport.upload.addEventListener('progress', this.options.onProgress);
           this.transport.upload.addEventListener('load', this.options.onUpload);
         } catch (e) {
-          // XMLHttpRequest Level 2
-          // Nicht verfügbar in Opera und MSIE
-          // In Opera vermutlich in Zukunft (wieder) implementiert
         }
       } else if (typeof data !== "string") {
         data = [];
@@ -1958,20 +1281,14 @@ JNode.Request.prototype = {
       this.transport.addEventListener('error', this.options.onFailure);
       this.transport.addEventListener('abort', this.options.onFailure);
     } catch (e) {
-      // Opera untersützt nur "onload", "onerror", "onabort"
       this.transport.onload = this.loaded.bind(this);
       this.transport.onerror = this.options.onFailure;
       this.transport.onabort = this.options.onFailure;
     }
     
-    // send
     this.transport.send(data);
   },
   
-  /**
-   * Verarbeitet die Serverantwort
-   *
-   */
   loaded: function loaded()
   {
     var res  = { text: '', json: null, xml: null }, 
@@ -1979,7 +1296,6 @@ JNode.Request.prototype = {
     
     res.text = this.transport.responseText;
     
-    // parse response
     switch (type.toLowerCase().replace(/;\s*charset=.*$/i, '')) {
       case 'application/json':
       case 'text/json':
@@ -2010,18 +1326,10 @@ JNode.Request.prototype = {
   } 
 };
 
-/**
- * Läd über AJAX/JSONP Daten und fügt diese direkt in das aktuelle Element ein.
- *
- * @param     {String}    url
- * @param     {Object}    options
- * @returns   {JNode}
- */
 JNode.prototype.load = function load(url, options)
 {
   options || (options = {});
   
-  /** @private */
   options.onSuccess = function(res) {
     this.update(res.text);
   }.bind(this);
@@ -2030,14 +1338,9 @@ JNode.prototype.load = function load(url, options)
   return this;
 };
   
-  // ----------------------------------------------
-  // effects
-  
 (function() {
-  /** @private */
   var CSS_TRANSFORM = /^((translate|rotate|scale)(X|Y|Z|3d)?|matrix(3d)?|perspective|skew(X|Y)?)$/i;
   
-  /** @private */
   var CSS_TRANSITION = (function() {
     var vendors = { o: "o", webkit: "webkit", moz: "", ms: "MS", "": "" },
         vendor  = false,
@@ -2058,7 +1361,6 @@ JNode.prototype.load = function load(url, options)
     if (vendor === false)
       return false;
     
-    /** @private */
     function mkevent(name) { return prefix ? prefix + name : name.toLowerCase(); }
       
     return {  
@@ -2068,18 +1370,14 @@ JNode.prototype.load = function load(url, options)
     };
   })();
   
-  /** @private */
   var DURATION_TRANSLATION = { "fast": .2, "slow": 2, "instant": .1, "default": .5 };
   
-  /** @private */
   var ANIM_DEFAULT_OPTIONS = { duration: .5, delay: 0, ease: 'linear' };
   
-  /** @private */
   function isNumOrStr(obj) {
     return (["number", "string"].indexOf(typeof obj) > -1);
   }
   
-  /** @private */
   function getDuration(duration) {
     if (isNaN(duration))
       return DURATION_TRANSLATION[duration] || .5;
@@ -2087,7 +1385,6 @@ JNode.prototype.load = function load(url, options)
     return duration;
   }
   
-  /** @private */
   function useDelay(options, func) {
     if (options.delay) {
       var delay = options.delay;
@@ -2100,14 +1397,6 @@ JNode.prototype.load = function load(url, options)
     func();
   }
   
-  /**
-   * Animiert CSS-Eigenschaften mithilfe von CSS3-Transitions/Transforms und Animationen.
-   *
-   * @param     {String}      styles
-   * @param     {Object}      options
-   * @param     {Function}    callback
-   * @returns   {JNode}
-   */
   JNode.prototype.anim = function anim(styles, options, callback)
   {
     var tstyle = "", sstyle = "", endEvent, doc = new JNode(document);
@@ -2118,13 +1407,11 @@ JNode.prototype.load = function load(url, options)
     options = JNode.merge(ANIM_DEFAULT_OPTIONS, options || {});
     options.duration = getDuration(options.duration);
     
-    if (styles.indexOf(":") === -1) {
-      // keyframe animation        
+    if (styles.indexOf(":") === -1) {       
       endEvent = CSS_TRANSITION.aevent;
       tstyle = sstyle = CSS_TRANSITION.vendor + "animation:" + styles + " " 
         + options.duration + "s " + options.ease + " " + options.delay + "s";
     } else {
-      // css transition
       var setter = {}, transf = ""; 
       endEvent = CSS_TRANSITION.tevent;
       
@@ -2138,7 +1425,6 @@ JNode.prototype.load = function load(url, options)
           continue;
         }
         
-        // https://bugzilla.mozilla.org/show_bug.cgi?id=571344
         var value = this.node.style.getPropertyValue(prop);
         
         if (value === "" || value === "auto")
@@ -2147,7 +1433,6 @@ JNode.prototype.load = function load(url, options)
         sstyle += ";" + prop + ':' + val;
       }
       
-      // generate style
       tstyle = sstyle + ";" + CSS_TRANSITION.vendor 
         + "transition:all " + options.duration + "s " 
         + options.ease + " " + options.delay + "s";
@@ -2161,7 +1446,6 @@ JNode.prototype.load = function load(url, options)
       doc.release(endEvent, handler, true);
       
       JNode.defer(function() {
-        // remove animations
         var nstyle = this.node.style;
         nstyle.removeProperty(CSS_TRANSITION.vendor + "transition");
         nstyle.removeProperty(CSS_TRANSITION.vendor + "animation");
@@ -2172,21 +1456,16 @@ JNode.prototype.load = function load(url, options)
       handled = true;
     }.bind(this);
     
-    // doc.one(endEvent, handler, true)
     doc.listen(endEvent, handler, true);
     JNode.defer(function() { this.style(tstyle); }.bind(this));
     
-    // ausführung erzwingen, da es in manchen fällen vorkommen kann, dass
-    // der handler nicht ausgeführt wird.
     setTimeout(handler, ((options.duration || .1) + 2) * 1000);
     return this;
   };
   
   if (!CSS_TRANSITION) {
-    // MSIE9 unterstützt keine CSS3-Transitions, aber CSS3-Transforms
     JNode.prototype.anim = function anim(styles, unused, callback)
     {
-      // unused :-D
       unused = void 0;
     
       if (styles.indexOf(":") > -1) {
@@ -2214,25 +1493,6 @@ JNode.prototype.load = function load(url, options)
     };
   }
   
-  /*
-  TODO: keep this DRY
-  
-  if (typeof options === "function")
-    callback = options, options = {};
-    
-  options || (options = {});
-  
-  if (isNumOrStr(options))
-    options = { duration: options }; 
-  */
-  
-  /**
-   * Fade-Effekt
-   *
-   * @param     {Number|String}   options
-   * @param     {Function}        callback
-   * @returns   {JNode}
-   */
   JNode.prototype.fade = function fade(options, callback) 
   {
     if (typeof options === "function")
@@ -2254,13 +1514,6 @@ JNode.prototype.load = function load(url, options)
     return this;
   };
 
-  /**
-   * Appear-Effekt
-   *
-   * @param     {Number|String|Object}    options
-   * @param     {Function}                callback
-   * @returns   {JNode}
-   */
   JNode.prototype.appear = function appear(options, callback) 
   {
     if (typeof options === "function")
@@ -2279,13 +1532,6 @@ JNode.prototype.load = function load(url, options)
     return this;
   };
 
-  /**
-   * Verpuffungs-Effekt
-   *
-   * @param     {Number|String|Object}    options
-   * @param     {Function}                callback
-   * @returns   {JNode}
-   */
   JNode.prototype.puff = function puff(options, callback)
   {
     if (typeof options === "function")
@@ -2299,13 +1545,6 @@ JNode.prototype.load = function load(url, options)
     return this.anim("opacity:0;scale:4;position:absolute", options, callback);
   };
   
-  /**
-   * Zusammenfalt-Effekt
-   *
-   * @param     {Number|String|Object}    options
-   * @param     {Function}                callback
-   * @returns   {JNode}
-   */
   JNode.prototype.fold = function fold(options, callback) 
   {
     var overflow = this.style("overflow"),
@@ -2338,14 +1577,6 @@ JNode.prototype.load = function load(url, options)
     return this;
   };
   
-  /**
-   * Blind-Effekt
-   *
-   * @param     {String}                  dir
-   * @param     {Number|String|Object}    options
-   * @param     {Function}                callback
-   * @returns   {JNode}
-   */
   JNode.prototype.blind = function blind(dir, options, callback)
   {
     var height   = this.height(),
@@ -2380,13 +1611,6 @@ JNode.prototype.load = function load(url, options)
     return this;
   };
   
-  /**
-   * Shrink-Effekt
-   *
-   * @param     {Number|String|Object}    options
-   * @param     {Function}                callback
-   * @returns   {JNode}
-   */
   JNode.prototype.shrink = function shrink(options, callback)
   {
     if (typeof options === "function")
@@ -2403,13 +1627,6 @@ JNode.prototype.load = function load(url, options)
     });
   };
   
-  /**
-   * Grow-Effekt
-   *
-   * @param     {Number|String|Object}    options
-   * @param     {Function}                callback
-   * @returns   {JNode}
-   */
   JNode.prototype.grow = function grow(options, callback)
   {
     if (typeof options === "function")
@@ -2422,27 +1639,17 @@ JNode.prototype.load = function load(url, options)
       
     this.show();
     
-    // wait for a repaint/reflow
     JNode.defer(function() { this.anim("scale:1", options, callback); }.bind(this));
     return this;
   };
 })();
   
-  // ----------------------------------------------
-  // query-string parser
-  
-// standalone-version:
-// https://github.com/raidrush-dev/querystring-parser
-
-/**
- * @static
- */
 JNode.Query = (function(undefined) {
   var T_ASSIGN    = 1,
       T_ARR_OPEN  = 2,
       T_ARR_CLOSE = 4,
       T_DELIM     = 8,
-      T_STRING    = 16, // stuff between "=" and "&" (delim) or EOF
+      T_STRING    = 16,
       T_NUMBER    = 32;
     
   var RE_OPERATOR = /[=\[\]]/,
@@ -2457,15 +1664,7 @@ JNode.Query = (function(undefined) {
       BOOLEAN_TYPE = toString.call(true),
       DATE_TYPE    = toString.call(new Date);
   
-  // ------------------------
-  // tokenizer
-  
   var Tokenizer = {
-    /**
-     * returns the next char of `data`
-     *
-     * @returns {String}
-     */
     next: function next()
     {
       if (this.offs + 1 > this.slen)
@@ -2474,13 +1673,6 @@ JNode.Query = (function(undefined) {
       return this.data.charAt(this.offs++);
     },
     
-    /**
-     * generates tokens for `data`
-     *
-     * @param   {String}            data
-     * @param   {String|undefined}  delim
-     * @returns {Array}
-     */
     tokenize: function tokenize(data, delim)
     {
       var tokens = [], token, split = data.split(delim || '&');
@@ -2526,23 +1718,12 @@ JNode.Query = (function(undefined) {
         tokens.push(T_DELIM);
       }
       
-      // free memory
       delete this.data, this.slen, this.offs;
       return tokens;
     }
   };
   
-  // ------------------------
-  // decoder
-  
   var Decoder = {
-    /**
-     * parses the query-string
-     *
-     * @param   {String}            query
-     * @param   {String|undefined}  delim
-     * @returns {Object}
-     */
     parse: function parse(query, delim)
     {
       this.delim   = delim || '&';
@@ -2550,7 +1731,6 @@ JNode.Query = (function(undefined) {
       
       var res = {};
       
-      // parse AST
       while (this.tokens.length) {
         this.expect(T_STRING);
         
@@ -2565,13 +1745,6 @@ JNode.Query = (function(undefined) {
       return res;
     },
     
-    /**
-     * collects all properties
-     *
-     * @param   {Array|Object}    host
-     * @param   {Object}          root
-     * @param   {String}          key
-     */
     collect: function collect(host, root, key)
     {
       var token;
@@ -2597,24 +1770,17 @@ JNode.Query = (function(undefined) {
       }
     },
     
-    /**
-     * parses access "[" "]" expressions
-     *
-     * @param   {Array|Object}    host
-     */
     access: function access(host)
     {
       var token;
       
       switch (token = this.next()) {
-        case T_ARR_CLOSE:
-          // alias for push() 
+        case T_ARR_CLOSE: 
           var key = host.push(this.init()) - 1;
           this.collect(host[key], host, key);
           break;
           
         case T_NUMBER:
-          // numeric access
           var index = this.next();
           this.expect(T_ARR_CLOSE);
           
@@ -2629,7 +1795,6 @@ JNode.Query = (function(undefined) {
           break;
           
         case T_STRING:
-          // object access
           var name = this.next();
           this.expect(T_ARR_CLOSE);
           
@@ -2645,29 +1810,17 @@ JNode.Query = (function(undefined) {
       }
     },
     
-    /**
-     * returns the next token without removing it from the stack
-     *
-     * @return  {Number|String}
-     */
     ahead: function ahead(seek)
     {
       return this.tokens[seek || 0];
     },
     
-    
-    /**
-     * looks ahead and returns the type of the next expression
-     *
-     * @return    {Array|Object}
-     */
     init: function init()
     {
       var token;
       
       switch (this.ahead()) {
         case T_ARR_OPEN:
-          // we must go deeper *inception*
           switch (token = this.ahead(1)) {
             case T_ARR_CLOSE:
             case T_NUMBER:
@@ -2677,7 +1830,6 @@ JNode.Query = (function(undefined) {
               return {};
               
             default:
-              // syntax error
               throw new Error('Syntax error: unexpected ' + this.lookup(token) 
                 + ', expecting "]", (number) or (string)');
           }
@@ -2689,12 +1841,6 @@ JNode.Query = (function(undefined) {
       }
     },
     
-    /**
-     * returns a readable representation of a token-type
-     *
-     * @param   {Number}    type
-     * @returns {String}
-     */
     lookup: function lookup(type) 
     {
       switch (type) {
@@ -2721,22 +1867,11 @@ JNode.Query = (function(undefined) {
       }
     },
     
-    /**
-     * returns the top-token in stack
-     *
-     * @returns {Number|String}
-     */
     next: function next()
     {
       return this.tokens.length ? this.tokens.shift() : null;
     },
     
-    /**
-     * validates the next token
-     *
-     * @throws  {Error}
-     * @param   {Number}        tokens
-     */
     expect: function expect(tokens)
     {
       if (this.tokens.length && (this.tokens[0] & tokens) === 0) {
@@ -2754,17 +1889,7 @@ JNode.Query = (function(undefined) {
     }
   };
   
-  // ------------------------
-  // encoder
-  
   var Encoder = {
-    /**
-     * creates the query-string
-     *
-     * @param   {Object}            object
-     * @param   {String|undefined}  delim
-     * @reutrns {String}
-     */
     parse: function parse(object, delim)
     {
       this.delim = delim || '&';
@@ -2782,13 +1907,6 @@ JNode.Query = (function(undefined) {
       return result.join(this.delim);
     },
     
-    /**
-     * serializes the value of the current object
-     *
-     * @param   {Scalar|Array|Object}   value
-     * @param   {String}                label
-     * @returns {String}
-     */
     serialize: function serialize(value, label)
     {            
       if (typeof value === "undefined" || value === null)
@@ -2816,13 +1934,6 @@ JNode.Query = (function(undefined) {
       }
     },
     
-    /**
-     * parses arrays and objects
-     *
-     * @param   {Array|Object}    value
-     * @param   {String}          label
-     * @reutrns {String}
-     */
     access: function access(value, label)
     {
       var result = [], value;
@@ -2838,11 +1949,6 @@ JNode.Query = (function(undefined) {
       return result.join(this.delim);
     },
     
-    /**
-     * serializes an array/object property
-     *
-     * @
-     */
     handle: function handle(stack, label, value, prop)
     {
       var res;
@@ -2851,41 +1957,18 @@ JNode.Query = (function(undefined) {
         stack.push(res);
     },
     
-    /**
-     * uses encodeURIComponent
-     *
-     * @param   {String}      value
-     * @returns {String}
-     */
     encode: function encode(value)
     {
       return encodeURIComponent(value);
     }
   };
   
-  // ------------------------
-  // exports
-  
   return {
-    /**
-     * decodes a query-string
-     *
-     * @param   {String}            query
-     * @param   {String|undefined}  delim
-     * @returns {Object}
-     */
     decode: function decode(query, delim)
     {
       return Decoder.parse(query, delim);
     },
     
-    /**
-     * encodes an object 
-     *
-     * @param   {Object}            object
-     * @param   {String|undefined}  delim
-     * @returns {String}
-     */
     encode: function encode(object, delim) 
     {
       return Encoder.parse(object, delim);
@@ -2905,28 +1988,11 @@ JNode.Query = (function(undefined) {
     
   Object.freeze(JNode.GET);
   
-  // ----------------------------------------------
-  // static
-  
-  /** @private */
   var RX_EL_ID   = /^(\w+)?#([\w:]+)$/,
       RX_EL_NAME = /^[a-zA-Z]+$/;
   
-  /** @private */
   var EMPTY_JNODE_LIST = new JNode.List(EMPTY_ARRAY);
   
-  /**
-   * Findet alle Elemente, die auf den angegebenen CSS-Selektor passen.
-   *
-   * @example Dise Funktion ist, falls JNode.noConflict() nicht verwendet wurde, global
-   * unter dem Shortcut $$ erreichbar.
-   *
-   * @static
-   * @param     {String}          selector
-   * @param     {Element|JNode}   context
-   * @param     {Boolean}         first
-   * @returns   {Array[JNode]}
-   */
   JNode.find = function find(selector, context, first) 
   {
     if (context === true) {
@@ -2941,12 +2007,10 @@ JNode.Query = (function(undefined) {
     var nodes = [],
         match;
         
-    // BODY
     if (selector.toLowerCase() === 'body') {
       match = document.body;
       first = true;
     }
-    // #ID
     if (selector.match(RX_EL_ID)) {
       match = document.getElementById(RegExp.$2);
       first = true;
@@ -2954,14 +2018,12 @@ JNode.Query = (function(undefined) {
       if (RegExp.$1 && match.nodeName.toUpperCase() != RegExp.$1.toUpperCase())
         match = null;
     }
-    // TAGNAME
     else if (selector.match(RX_EL_NAME)) {
       match = context.getElementsByTagName(selector);
       
       if (first) 
         match = match ? match[0] : null;
     }
-    // css-selector
     else {
       match = context["querySelector" + (first ? "" : "All")](selector) || [];
       
@@ -2981,20 +2043,6 @@ JNode.Query = (function(undefined) {
     return new JNode.List(nodes);
   };
   
-  /**
-   * Prüft ob ein Element auf den angegebeneen CSS-Slektor passt.
-   *
-   * @example Hinweise und weitere Informationen findest du unter JNode#match()
-   * 
-   * based on Sizzle
-   * <http://sizzlejs.com/>
-   *
-   * @static
-   * @function
-   * @param     {String}    selector
-   * @param     {Element}   element
-   * @returns   {Boolean}
-   */
   JNode.match = (function() {
     var html    = document.documentElement,
         matches = html.matchesSelector || html.mozMatchesSelector 
@@ -3002,20 +2050,19 @@ JNode.Query = (function(undefined) {
                || html.oMatchesSelector;
     
     if (!matches) {
-      /** @private */
       return function match(expr, node) { 
         var reset = false;
         
         if (!node.parentNode) {
           reset = node.style.display;
           node.style.display = 'none';
-          document.body.appendChild(node); // reflow + repaint
+          document.body.appendChild(node);
         }
         
         var matches = SLICE.call(node.parentNode.querySelectorAll(expr), 0).indexOf(node) !== -1;
         
         if (reset !== false) {
-          document.body.removeChild(node); // reflow + repaint
+          document.body.removeChild(node);
           node.style.display = reset;
         }
         
@@ -3023,14 +2070,10 @@ JNode.Query = (function(undefined) {
       };
     }
     
-    // Check to see if it's possible to do matchesSelector
-    // on a disconnected node (IE 9 fails this)
     var disconnectedMatch = !matches.call(document.createElement("div"), "div"),
         pseudoWorks       = false;
     
     try {
-      // This should fail with an exception
-      // Gecko does not error, returns false instead
       matches.call(html, "[test!='']:sizzle");
     } catch(pseudoError) {
       pseudoWorks = true;
@@ -3038,34 +2081,27 @@ JNode.Query = (function(undefined) {
     
     var pseudoRegex = /:((?:[\w\u00c0-\uFFFF\-]|\\.)+)(?:\((['"]?)((?:\([^\)]+\)|[^\(\)]*)+)\2\))?/;
     
-    /** @private */
     return function match(expr, node) {
-      // Make sure that attribute selectors are quoted
       expr = expr.replace(/\=\s*([^'"\]]*)\s*\]/g, "='$1']");
       
       try {
         if (pseudoWorks || pseudoRegex.test(expr) && !(/!=/.test(expr))) {
           var ret = matches.call(node, expr);
-
-          // IE 9's matchesSelector returns false on disconnected nodes
+          
           if (ret || !disconnectedMatch ||
-            // As well, disconnected nodes are said to be in a document
-            // fragment in IE 9, so check for that
             node.document && node.document.nodeType !== 11 ) {
             return ret;
           }
         }
       } catch(e) {}
       
-      // MSIE 9
       if (disconnectedMatch && !node.parentNode) {
-        // VERY SLOW, but this is the only way to emulate the expected behavior
         var parentNode = new JNode("div");
-        parentNode.style("display:none;position:absolute;top:-100px;left:-100px").append(document.body); // reflow + repaint
-        parentNode.insert(node.cloneNode(true)); // reflow + repaint
+        parentNode.style("display:none;position:absolute;top:-100px;left:-100px").append(document.body); 
+        parentNode.insert(node.cloneNode(true));
         
         var res = JNode.match(expr, node);
-        parentNode.remove(); // reflow + repaint
+        parentNode.remove();
         
         return res;
       }
@@ -3074,17 +2110,6 @@ JNode.Query = (function(undefined) {
     };
   })();
   
-  /**
-   * Initialisiert aus dem/den angegebenen Argumenten eine Wrapper Klasse
-   *
-   * @example Diese Funktion ist, falls JNode.noConflict() nicht verwendet wurde, global
-   * unter dem Shortcut $ erreichbar.
-   *
-   * @static
-   * @param     {Object}                        indicator
-   * @param     {Object}                        ...
-   * @returns   {JNode.List|JNode|JNode.Event}
-   */
   JNode.init = function init(indicator)
   {
     if (indicator instanceof Event)
@@ -3107,14 +2132,6 @@ JNode.Query = (function(undefined) {
     return nodes ? new JNode.List(nodes) : null;
   };
   
-  /**
-   * Ruft eine Funktion auf wenn der Browser für kurze Zeit 
-   * nichts weiter zu tun hat (idle).
-   *
-   * @static
-   * @param     {Function}    func
-   * @returns   {Number}
-   */
   JNode.defer = function defer(func) 
   {
     var args = SLICE.call(arguments, 1);
@@ -3124,21 +2141,10 @@ JNode.Query = (function(undefined) {
     }, 10);
   };
   
-  /**
-   * Fungiert als `for each()` Funktion mit der sich 
-   * Array/Array-Like und sonstige Objekte iterieren lassen.
-   *
-   * @static
-   * @param     {Array|Object}    object
-   * @param     {Function}        func
-   * @param     {Object}          context
-   */
   JNode.each = function each(object, func, context)
   {
     context && (func = func.bind(context));
     
-    // JavaScript 1.8.6 
-    // function.length != Array-like
     if (typeof object === "function")
       throw new TypeError;
     
@@ -3157,13 +2163,6 @@ JNode.Query = (function(undefined) {
         break;
   };
   
-  /**
-   * Führt mehrere Arrays oder Objekte zusammen.
-   *
-   * @static
-   * @param     {Object|Array}    ...
-   * @returns   {Object|Array}
-   */
   JNode.merge = function merge(dest)
   {
     SLICE.call(arguments, 1).forEach(function(source) {
@@ -3175,14 +2174,6 @@ JNode.Query = (function(undefined) {
     return dest;
   };
   
-  /**
-   * Führt zwei Funktionen zusammen indem es die "Originale" als
-   * Parameter zur "NEuen" weiterleitet
-   *
-   * @param   {Function}    orig
-   * @param   {Function}    call
-   * @returns {Function}
-   */
   JNode.wrap = function wrap(orig, call)
   {
     return function() {
@@ -3193,27 +2184,13 @@ JNode.Query = (function(undefined) {
     };
   };
   
-  /**
-   * Globale "noop"-Funktionsreferenz
-   *
-   * @static
-   */
   JNode.noop = function noop() {};
-  
-  // ----------------------------------------------
-  // utilities
   
   JNode._$$ = window.$$;
   JNode._$  = window.$;
   window.$$ = JNode.find;
   window.$  = JNode.init;
   
-  /**
-   * Setzt die beiden Variablen $ und $$ wieder zurück, wie sie 
-   * waren bevor JNode diese überschrieben hat.
-   *
-   * @return  Object
-   */
   JNode.noConflict = function noConflict() 
   {
     window.$$ = JNode._$$;
@@ -3224,9 +2201,6 @@ JNode.Query = (function(undefined) {
       '$':  JNode.init
     };
   };
-  
-  // ----------------------------------------------
-  // expose
   
   return JNode;
 })();
