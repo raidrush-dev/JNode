@@ -275,19 +275,20 @@
    * @static
    * @param     {Element|Window}    element
    * @param     {String}            eventName
-   * @param     {Object}            meta
+   * @param     {Object}            data
    * @param     {Boolean}           bubble
    */
-  JNode.fire = function fire(element, eventName, meta, bubble) {
+  JNode.fire = function fire(element, eventName, data, bubble) {
     bubble = bubble ? !!bubble : true;
     
-    if (!meta) meta = {};
+    if (typeof data === "boolean")
+      bubble = data, data = {};
     
     var event = document.createEvent('HTMLEvents');
     event.initEvent('dataavailable', bubble, true);
     
     event.eventName = eventName;
-    event.meta = meta;
+    event.data = data;
     
     element.dispatchEvent(event);
   };
@@ -341,9 +342,9 @@
    * @see       JNode.fire
    * @returns   {JNode}
    */
-  JNode.prototype.fire = function fire(eventName, meta, bubble)
+  JNode.prototype.fire = function fire(eventName, data, bubble)
   {
-    JNode.fire(this.node, eventName, meta, bubble);
+    JNode.fire(this.node, eventName, data, bubble);
     return this;
   };
   

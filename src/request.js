@@ -50,6 +50,9 @@ JNode.Request = function JRequest(url, options)
   this.request();
 };
 
+// JSONP default paramname
+JNode.Request.JSONP_DEFAULT = 'jsonp';
+
 // prototype
 JNode.Request.prototype = {    
   /**
@@ -61,10 +64,14 @@ JNode.Request.prototype = {
     // JSONP
     if (this.options.jsonp) {
       var jsonp = '_jnode_jsonp_ref_' + JSONP_CALLBACK_COUNTER++;
-      window[jsonp] = this.options.jsonp;
+      window[jsonp] = this.options.onSuccess;
+      
+      var param = this.options.jsonp;
+      if (typeof param !== "string")
+        param = JNode.Request.JSONP_DEFAULT;
       
       var url = this.url;
-      url += (url.indexOf('?') == -1 ? '?' : '&') + 'jsonp=' + jsonp;
+      url += (url.indexOf('?') == -1 ? '?' : '&') + param + '=' + jsonp;
       
       var script = new JNode('script');
       script.attr({ type: 'text/javascript', src: url });
@@ -76,7 +83,18 @@ JNode.Request.prototype = {
         });
       });
       
-      script.append(document.body);        
+      var failure = function() {
+        JNode.defer(function() {
+          script.remove();
+          delete window[jsonp];
+          this.options.onFailure();
+        }.bind(this));
+      }.bind(this);
+      
+      script.listen("error", failure)
+        .listen("abort", failure)
+        .append(document.body);  
+        
       return;
     }
     

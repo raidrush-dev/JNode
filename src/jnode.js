@@ -396,12 +396,18 @@ var JNode = (function() {
         this.style(orig);
       }
       
-      return JNode.merge(props, {
-        width:  props[0] - (this.style("border-left-width") || 0 
-          + this.style("border-right-width") || 0),
+      var blr = parseInt(this.style("border-left-width"))
+              + parseInt(this.style("border-right-width")),
+              
+          btb = parseInt(this.style("border-top-width"))
+              + parseInt(this.style("border-bottom-width"));
           
-        height: props[1] - (this.style("border-top-width") || 0 
-          + this.style("border-bottom-width") || 0)
+      props[0] -= blr;
+      props[1] -= btb;
+      
+      return JNode.merge(props, {
+        width:  props[0],
+        height: props[1]
       });
     },
     
@@ -1132,19 +1138,6 @@ var JNode = (function() {
   
   //@require query.js
   
-  JNode.GET = {};
-
-  (function() {
-    var search = window.location.search.substring(1);
-    
-    if (search) {
-      var delim = search.replace(/[^;&]+/g, '').substr(0, 1);
-      JNode.GET = JNode.Query.decode(search, delim);
-    }
-  })();
-    
-  Object.freeze(JNode.GET);
-  
   // ----------------------------------------------
   // static
   
@@ -1329,6 +1322,10 @@ var JNode = (function() {
   {
     if (indicator instanceof Event)
       return new JNode.Event(indicator);
+    
+    if (indicator instanceof JNode
+     || indicator instanceof JNode.Event)
+      return indicator;
     
     if (arguments.length === 1) {
       if (indicator instanceof Element || indicator === document)
