@@ -65,6 +65,23 @@
     func();
   }
   
+  /** @private */
+  function normalize(options, callback) {
+    if (typeof options === "function")
+      callback = options, options = {};
+      
+    options || (options = {});
+    callback || (callback = JNode.noop);
+    
+    if (isNumOrStr(options))
+      options = { duration: options };
+      
+    return {
+      options:  options,
+      callback: callback
+    };
+  }
+  
   /**
    * Animiert CSS-Eigenschaften mithilfe von CSS3-Transitions/Transforms und Animationen.
    *
@@ -132,6 +149,9 @@
         nstyle.removeProperty(CSS_TRANSITION.vendor + "animation");
       
         callback && JNode.defer(callback, this);
+        
+        if (options.silent) return;
+        doc.fire("jnode:transitionend");
       }.bind(this));
       
       handled = true;
@@ -179,18 +199,6 @@
     };
   }
   
-  /*
-  TODO: keep this DRY
-  
-  if (typeof options === "function")
-    callback = options, options = {};
-    
-  options || (options = {});
-  
-  if (isNumOrStr(options))
-    options = { duration: options }; 
-  */
-  
   /**
    * Fade-Effekt
    *
@@ -200,20 +208,14 @@
    */
   JNode.prototype.fade = function fade(options, callback) 
   {
-    if (typeof options === "function")
-      callback = options, options = {};
+    var args = normalize(options, callback);
       
-    options || (options = {});
-    
-    if (isNumOrStr(options))
-      options = { duration: options };
-      
-    callback = JNode.wrap(callback || JNode.noop,
+    args.callback = JNode.wrap(args.callback,
       function(orig, node) { node.hide(); JNode.defer(orig, node); });
     
-    useDelay(options, function() {
+    useDelay(args.options, function() {
       this.style("opacity:1");
-      this.anim("opacity:0", options, callback);
+      this.anim("opacity:0", args.options, args.callback);
     }.bind(this));
     
     return this;
@@ -228,17 +230,11 @@
    */
   JNode.prototype.appear = function appear(options, callback) 
   {
-    if (typeof options === "function")
-      callback = options, options = {};
-      
-    options || (options = {});
+    var args = normalize(options, callback);
     
-    if (isNumOrStr(options))
-      options = { duration: options };
-    
-    useDelay(options, function() {
+    useDelay(args.options, function() {
       this.style("opacity:0;").show();
-      this.anim("opacity:1", options, callback);
+      this.anim("opacity:1", args.options, args.callback);
     }.bind(this));
     
     return this;
@@ -253,15 +249,10 @@
    */
   JNode.prototype.puff = function puff(options, callback)
   {
-    if (typeof options === "function")
-      callback = options, options = {};
+    var args = normalize(options, callback);
       
-    options || (options = {});
-    
-    if (isNumOrStr(options))
-      options = { duration: options };
-      
-    return this.anim("opacity:0;scale:4;position:absolute", options, callback);
+    return this.anim("opacity:0;scale:4;position:absolute", 
+      args.options, args.callback);
   };
   
   /**
@@ -277,25 +268,18 @@
         width    = this.node.style.getPropertyValue("width"),
         height   = this.node.style.getPropertyValue("height");
     
-    if (typeof options === "function")
-      callback = options, options = {};
-      
-    options || (options = {});
+    var args = normalize(options, callback);
+    args.options.duration = getDuration(args.options.duration) / 2.0
     
-    if (isNumOrStr(options))
-      options = { duration: options };
-    
-    options.duration = getDuration(options.duration) / 2.0
-    
-    var options2 = JNode.merge({}, options);
+    var options2 = JNode.merge({}, args.options);
     options2.delay = .2;
     
-    useDelay(options, function() {
+    useDelay(args.options, function() {
       this.style("overflow:hidden");
-      this.anim("height:10px;", options, function(node) {
+      this.anim("height:10px;", args.options, function(node) {
         node.anim("width:0px;", options2, function(node) {
           node.hide().style({ overflow: overflow, width: width, height: height });
-          callback && JNode.defer(callback, node);
+          args.callback && JNode.defer(args.callback, node);
         }); 
       }); 
     }.bind(this));
@@ -316,29 +300,23 @@
     var height   = this.height(),
         overflow = this.style("overflow");
         
-    if (typeof options === "function")
-      callback = options, options = {};
-      
-    options || (options = {});
+    var args = normalize(options, callback);
     
-    if (isNumOrStr(options))
-      options = { duration: options };
-    
-    useDelay(options, ((dir && dir === "down") ? 
+    useDelay(args.options, ((dir && dir === "down") ? 
       function() {
         this.style("overflow:hidden;height:0px;").show();
         JNode.defer(function() {
-          this.anim("height:" + height + "px", options, function(node) {
+          this.anim("height:" + height + "px", args.options, function(node) {
             node.style("overflow:" + overflow);
-            callback && JNode.defer(callback, node);
+            args.callback && JNode.defer(args.callback, node);
           });
         }.bind(this));
       } :
       function() {
         this.style("overflow:hidden");
-        this.anim("height:0px;", options, function(node) {
+        this.anim("height:0px;", args.options, function(node) {
           node.hide().style("height:" + height + "px;overflow:" + overflow);
-          callback && JNode.defer(callback, node);
+          args.callback && JNode.defer(args.callback, node);
         });
       }
     ).bind(this));
@@ -354,17 +332,11 @@
    */
   JNode.prototype.shrink = function shrink(options, callback)
   {
-    if (typeof options === "function")
-      callback = options, options = {};
-      
-    options || (options = {});
+    var args = normalize(options, callback);
     
-    if (isNumOrStr(options))
-      options = { duration: options };
-    
-    return this.anim("scale:0", options, function(node) {
+    return this.anim("scale:0", args.options, function(node) {
       node.hide();
-      callback && JNode.defer(callback, node);
+      args.callback && JNode.defer(args.callback, node);
     });
   };
   
@@ -377,18 +349,68 @@
    */
   JNode.prototype.grow = function grow(options, callback)
   {
-    if (typeof options === "function")
-      callback = options, options = {};
-      
-    options || (options = {});
-    
-    if (isNumOrStr(options))
-      options = { duration: options };
+    var args = normalize(options, callback);
       
     this.show();
+    return this.anim("scale:1", args.options, args.callback);
+  };
+  
+  // --------------------------
+  
+  /**
+   * Wiederverwendbare CSS3-Transitions
+   *
+   * @class
+   * @param     {String}      styles
+   * @param     {Object}      options
+   * @param     {Function}    callback
+   */
+  JNode.Transition = function JTransition(styles, options, callback)
+  {
+    this.constructor = JTransition;
     
-    // wait for a repaint/reflow
-    JNode.defer(function() { this.anim("scale:1", options, callback); }.bind(this));
-    return this;
+    // ---
+    this.styles = styles;
+    JNode.merge(this, normalize(options, callback));
+    
+    this.options.silent = true;
+  };
+  
+  // prototype
+  JNode.Transition.prototype = {
+    /**
+     * wendet die transition an die angegebenen elemente an
+     *
+     * @param     {Array[JNode|Element]|JList|JNode|Element}    nodes
+     * @void
+     */
+    apply: function apply(nodes)
+    {
+      if (typeof nodes.length === "undefined")
+        nodes = [nodes];
+        
+      var doc = new JNode(document);
+        
+      var handled, handler = function() {
+        if (handled) return;
+        doc.release(CSS_TRANSITION.tevent, handler, true);
+        
+        JNode.defer(function(nodes) {
+          this.callback(nodes);
+          doc.fire("jnode:transitionend");
+        }.bind(this), nodes);
+        
+        handled = true;
+      }.bind(this);
+      
+      doc.listen(CSS_TRANSITION.tevent, handler, true);
+      setTimeout(handler, (getDuration(this.options) + 2) * 1000);
+      
+      JNode.each(nodes, function(node) {
+        JNode.init(node).anim(this.styles, this.options);
+      }, this);
+      
+      return this;
+    }
   };
 })();
